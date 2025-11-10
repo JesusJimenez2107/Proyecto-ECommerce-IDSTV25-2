@@ -1,0 +1,173 @@
+/* Importar la fuente Quicksand */
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;600;700&display=swap');
+
+/* Reset básico */
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: 'Quicksand', sans-serif;
+    color: #1d1d1d;
+    background: #ADD9B3;
+    /* menta claro */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+/* Contenedor principal */
+.login-container {
+    width: min(1000px, 100%);
+    background: #ffffff;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .14);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 520px 1fr;
+}
+
+
+/* Lado formulario */
+.form-section {
+    background: #657B68; /* verde */
+    color: #ffffff;
+    padding: 40px 56px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.brand {
+    display: flex;
+    justify-content: center;   
+    margin-bottom: 10px;       
+}
+.brand img {
+    width: 200px;
+    display: block;
+}
+
+.form-section>h2 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+/* Formulario */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; 
+}
+
+.form-section h2 {
+    text-align: center;
+    width: 100%;
+}
+
+label {
+    font-size: 20px;
+    color: #eef6f0;
+}
+
+input[type="email"],
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    background: #FFF8ED; /* marfil */
+    border: 0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 18px;
+    font-family: 'Quicksand', sans-serif;
+    outline: none;
+    transition: box-shadow .2s ease, transform .02s ease;
+}
+
+input[type="email"]:focus,
+input[type="text"]:focus,
+input[type="password"]:focus {
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, .25);
+}
+
+
+/* Texto de registro */
+form p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #e8f0ea;
+}
+
+form a {
+    color: #F5E6CA;
+    /* beige claro */
+    text-decoration: underline;
+}
+
+/* Botón */
+button[type="submit"] {
+    margin-top: 8px;
+    border: 0;
+    background: #E07A5F;
+    /* naranja cálido */
+    color: #ffffff;
+    font-weight: 700;
+    letter-spacing: .4px;
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 28px;
+    font-family: 'Quicksand', sans-serif;
+    cursor: pointer;
+    transition: transform .02s ease, background .2s ease, box-shadow .2s ease;
+    box-shadow: 0 8px 22px rgba(224, 122, 95, .35);
+}
+
+button[type="submit"]:hover {
+    background: #cf6b52;
+}
+
+button[type="submit"]:active {
+    transform: translateY(1px);
+}
+
+/* Lado imagen */
+.image-section {
+    position: relative;
+    background: #F5E6CA;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-section img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+    .login-container {
+        grid-template-columns: 1fr;
+    }
+
+    .image-section {
+        display: none;
+    }
+
+    .form-section {
+        padding: 36px 24px 28px;
+    }
+
+    .brand h1 {
+        font-size: 28px;
+    }
+}
