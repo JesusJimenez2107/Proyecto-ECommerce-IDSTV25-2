@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Monstera Deliciosa – Raíz Viva</title>
+
+    <!-- Global + detalle -->
+    <link rel="stylesheet" href="../Assets/styles/global.css" />
+    <link rel="stylesheet" href="../Assets/styles/product-detail.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;600;700&display=swap"
+        rel="stylesheet" />
+</head>
+
+<body>
+
+    <!-- Header reutilizable -->
+    <header class="topbar">
+        <div class="topbar__inner">
+            <a class="brand" href="/"><img src="../Assets/img/logo.png" alt="Raíz Viva"></a>
+
+            <div class="nav-dropdown">
+                <button class="nav-dropbtn" aria-haspopup="true" aria-expanded="false" aria-controls="menuProductos">
+                    Productos
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" />
+                    </svg>
+                </button>
+                <nav class="nav-menu" id="menuProductos" role="menu" hidden>
+                    <a role="menuitem" class="nav-menu__item" href="/productos?cat=interior">Plantas de interior</a>
+                    <a role="menuitem" class="nav-menu__item" href="/productos?cat=exterior">Plantas de exterior</a>
+                    <a role="menuitem" class="nav-menu__item" href="/productos?cat=bajo-mantenimiento">Bajo
+                        mantenimiento</a>
+                    <a role="menuitem" class="nav-menu__item" href="/productos?cat=aromaticas-comestibles">Aromáticas y
+                        comestibles</a>
+                    <a role="menuitem" class="nav-menu__item" href="/productos?cat=macetas-accesorios">Macetas y
+                        accesorios</a>
+                    <a role="menuitem" class="nav-menu__item" href="/productos?cat=cuidados-bienestar">Cuidados y
+                        bienestar</a>
+                </nav>
+            </div>
+
+            <form class="search" role="search">
+                <input type="search" placeholder="Buscar" aria-label="Buscar productos" />
+                <button type="submit" aria-label="Buscar">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#586a58" stroke-width="2">
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="m20 20-3.5-3.5" />
+                    </svg>
+                </button>
+            </form>
+
+            <div class="actions">
+                <a href="/login" class="action">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+                        <path d="M20 21a8 8 0 1 0-16 0" />
+                        <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    <span>Ingresar</span>
+                </a>
+                <a href="#" class="action">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+                        <circle cx="10" cy="20" r="1" />
+                        <circle cx="18" cy="20" r="1" />
+                        <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6" />
+                    </svg>
+                    <span>0</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="page">
+        <!-- Migas -->
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="/">Inicio</a> › <a href="/productos?cat=interior">Plantas de Interior</a> › <span>Monstera
+                Deliciosa</span>
+        </nav>
+
+        <!-- Contenedor detalle -->
+        <section class="product-detail">
+            <!-- Galería -->
+            <aside class="pd-gallery">
+                <div class="pd-thumbs">
+                    <button class="pd-thumb is-active" aria-label="Vista 1">
+                        <img src="../Assets/img/monstera_1.jpg" alt="Monstera vista 1">
+                    </button>
+                    <button class="pd-thumb" aria-label="Vista 2">
+                        <img src="../Assets/img/monstera_2.jpg" alt="Monstera vista 2">
+                    </button>
+                    <button class="pd-thumb" aria-label="Vista 3">
+                        <img src="../Assets/img/monstera_3.jpg" alt="Monstera vista 3">
+                    </button>
+                </div>
+
+                <figure class="pd-main">
+                    <img src="../Assets/img/monstera_1.jpg" alt="Monstera Deliciosa en maceta">
+                </figure>
+            </aside>
+
+            <!-- Panel de información -->
+            <article class="pd-panel">
+                <header class="pd-head">
+                    <h1 class="pd-title">MONSTERA DELICIOSA</h1>
+                    <p class="pd-sub">Planta de Interior</p>
+                </header>
+
+                <p class="pd-price">$250.00</p>
+                <p class="pd-tax-note">Precio incluye IVA.</p>
+
+                <p class="pd-desc">
+                    Déjate inspirar por las hojas verdes de la naturaleza con esta MONSTERA.
+                    Se trata de una llamadora epífita que se sube a otras plantas para acercarse al sol.
+                    Una maravillosa compañera de cuarto que hace que tu hogar sea más vibrante.
+                </p>
+
+                <p class="pd-stock"><strong>Stock:</strong> 45 Disponibles</p>
+
+                <!-- Cantidad + CTA -->
+                <div class="pd-cta">
+                    <div class="pd-qty" role="group" aria-label="Cantidad">
+                        <button class="qty-btn" aria-label="Disminuir">−</button>
+                        <input class="qty-input" type="number" value="1" min="1" aria-label="Cantidad">
+                        <button class="qty-btn" aria-label="Aumentar">+</button>
+                    </div>
+
+                    <a href="#" class="btn pd-add">Agregar al carrito</a>
+                </div>
+
+                <!-- Confianzas -->
+                <ul class="pd-benefits" aria-label="Beneficios">
+                    <li>
+                        <img src="../Assets/icons/shipping.svg" alt="" aria-hidden="true">
+                        <span>Envío especializado</span>
+                    </li>
+                    <li>
+                        <img src="../Assets/icons/shield.svg" alt="" aria-hidden="true">
+                        <span>Garantía de 15 días</span>
+                    </li>
+                    <li>
+                        <img src="../Assets/icons/secure.svg" alt="" aria-hidden="true">
+                        <span>Pago seguro</span>
+                    </li>
+                </ul>
+            </article>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>© Raíz Viva</p>
+    </footer>
+
+</body>
+
+</html>

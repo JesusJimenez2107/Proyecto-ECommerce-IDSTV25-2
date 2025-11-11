@@ -1,0 +1,186 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;600;700&display=swap');
+
+/* ===== Base / Reset ===== */
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: 'Quicksand', sans-serif;
+    color: #1d1d1d;
+    background: #ADD9B3;
+    /* tu fondo global */
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+/* ===== Header / Topbar ===== */
+.topbar {
+    background: #657B68;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.topbar__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px 16px;
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    align-items: center;
+    gap: 20px;
+}
+
+.brand img {
+    height: 50px;
+}
+
+/* ===== Menú desplegable ===== */
+.nav-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.nav-dropbtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border: 0;
+    background: transparent;
+    color: #EDE7DB;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.nav-dropbtn:focus {
+    outline: 2px solid rgba(255, 255, 255, .4);
+    outline-offset: 2px;
+}
+
+.nav-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 260px;
+    background: #ffffff;
+    border: 1px solid #e6e6e6;
+    border-radius: 10px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .12);
+    padding: 8px;
+    margin-top: 8px;
+    z-index: 1000;
+}
+
+.nav-menu__item {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: #2e2e2e;
+    font-weight: 700;
+}
+
+.nav-menu__item:hover,
+.nav-menu__item:focus {
+    background: #FFF8ED;
+    outline: none;
+}
+
+/* Hover en desktop (además del click con JS) */
+@media (min-width: 1024px) {
+    .nav-dropdown:hover .nav-menu {
+        display: block;
+    }
+
+    .nav-dropdown:hover .nav-menu[hidden] {
+        display: block;
+    }
+}
+
+/* ===== Buscador ===== */
+.search {
+    background: #dfe7df;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+}
+
+.search input {
+    border: 0;
+    outline: 0;
+    background: transparent;
+    width: 100%;
+    font-size: 14px;
+    padding: 4px 8px;
+}
+
+.search button {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    padding: 4px;
+}
+
+/* ===== Acciones (login / carrito) ===== */
+.actions {
+    display: flex;
+    gap: 14px;
+    justify-content: flex-end;
+}
+
+.action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #ffffff;
+    font-weight: 600;
+    opacity: .95;
+    font-size: 18px;
+}
+
+.action:hover {
+    opacity: 1;
+}
+
+/* ===== Contenedor de página compartido ===== */
+.page {
+    max-width: 1200px;
+    margin: 18px auto 40px;
+    border-radius: 8px;
+}
+
+/* ===== Footer ===== */
+.footer {
+    text-align: center;
+    color: #647a64;
+    padding: 24px 12px 40px;
+    font-size: 14px;
+}
+
+/* ===== Responsive global ===== */
+@media (max-width: 520px) {
+    .topbar__inner {
+        grid-template-columns: 120px 1fr;
+    }
+
+    .search {
+        grid-column: 1 / -1;
+    }
+}

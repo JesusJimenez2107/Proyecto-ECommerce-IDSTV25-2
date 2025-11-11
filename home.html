@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Raíz Viva – Inicio</title>
+    <link rel="stylesheet" href="../Assets/styles/global.css" />
     <link rel="stylesheet" href="../Assets/styles/home.css">
 </head>
 
@@ -27,12 +28,29 @@
 
                 <!-- Menú de categorías -->
                 <nav class="nav-menu" id="menuProductos" role="menu" hidden>
-                    <a role="menuitem" href="cat-interior.html" class="nav-menu__item">Plantas de interior</a>
-                    <a role="menuitem" href="cat-exterior.html" class="nav-menu__item">Plantas de exterior</a>
-                    <a role="menuitem" href="cat-bajo.html" class="nav-menu__item">Bajo mantenimiento</a>
-                    <a role="menuitem" href="cat-aromaticas.html" class="nav-menu__item">Aromáticas y comestibles</a>
-                    <a role="menuitem" href="cat-macetas.html" class="nav-menu__item">Macetas y accesorios</a>
-                    <a role="menuitem" href="cat-cuidados.html" class="nav-menu__item">Cuidados y bienestar</a>
+                    <a role="menuitem" href="productos.php?cat=interior" class="nav-menu__item">
+                        Plantas de interior
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=exterior" class="nav-menu__item">
+                        Plantas de exterior
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=bajo-mantenimiento" class="nav-menu__item">
+                        Bajo mantenimiento
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=aromaticas-comestibles" class="nav-menu__item">
+                        Aromáticas y comestibles
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=macetas-accesorios" class="nav-menu__item">
+                        Macetas y accesorios
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=cuidados-bienestar" class="nav-menu__item">
+                        Cuidados y bienestar
+                    </a>
                 </nav>
             </div>
 
@@ -78,35 +96,35 @@
 
         <!-- CATEGORÍAS -->
         <section class="categories" aria-label="Categorías">
-            <article class="card">
+            <a class="card" href="productos.php?cat=interior">
                 <img src="../Assets/img/cat-interior.png" alt="Plantas de interior">
                 <h3>PLANTAS DE<br>INTERIOR</h3>
-            </article>
+            </a>
 
-            <article class="card">
+            <a class="card" href="productos.php?cat=exterior">
                 <img src="../Assets/img/cat-exterior.png" alt="Plantas de exterior">
                 <h3>PLANTAS DE<br>EXTERIOR</h3>
-            </article>
+            </a>
 
-            <article class="card">
-                <img src="../Assets/img/cat-bajo.png" alt="Plantas de bajo mantenimiento">
+            <a class="card" href="productos.php?cat=bajo-mantenimiento">
+                <img src="../Assets/img/cat-bajo.png" alt="Bajo mantenimiento">
                 <h3>BAJO<br>MANTENIMIENTO</h3>
-            </article>
+            </a>
 
-            <article class="card">
-                <img src="../Assets/img/cat-aromatica.png" alt="Plantas aromáticas y comestibles">
+            <a class="card" href="productos.php?cat=aromaticas-comestibles">
+                <img src="../Assets/img/cat-aromatica.png" alt="Aromáticas y comestibles">
                 <h3>AROMÁTICAS Y<br>COMESTIBLES</h3>
-            </article>
+            </a>
 
-            <article class="card">
+            <a class="card" href="productos.php?cat=macetas-accesorios">
                 <img src="../Assets/img/cat-macetas.png" alt="Macetas y accesorios">
                 <h3>MACETAS Y<br>ACCESORIOS</h3>
-            </article>
+            </a>
 
-            <article class="card">
-                <img src="../Assets/img/cat-cuidados.png" alt="Cuidados y bienestar vegetal">
+            <a class="card" href="productos.php?cat=cuidados-bienestar">
+                <img src="../Assets/img/cat-cuidados.png" alt="Cuidados y bienestar">
                 <h3>CUIDADOS Y<br>BIENESTAR</h3>
-            </article>
+            </a>
         </section>
 
     </main>
