@@ -157,8 +157,8 @@
 
 .btn-outline-danger {
     display: inline-block;
-    border: 1.5px solid #DF6A50;
-    color: #DF6A50;
+    border: 1.5px solid #FF0000;
+    color: #FF0000;
     background: #fff;
     padding: 10px 14px;
     border-radius: 10px;
@@ -188,7 +188,7 @@
 
 .btn-buy {
     display: inline-block;
-    background: #E07A5F;
+    background: #E97E57;
     color: #fff;
     font-weight: 800;
     padding: 10px 16px;
