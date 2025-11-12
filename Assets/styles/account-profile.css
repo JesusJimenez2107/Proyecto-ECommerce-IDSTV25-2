@@ -1,0 +1,90 @@
+/* Card centrado */
+.profile-card {
+    max-width: 720px;
+    margin: 10px auto 24px;
+    background: #FFF6E9;
+    /* crema suave como tu maqueta */
+    border: 1px solid #E8DFCF;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .08);
+}
+
+/* Título del card */
+.profile-title {
+    margin: 0 0 20px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 26px;
+    letter-spacing: .6px;
+}
+
+/* ===== DATOS ===== */
+.profile-data {
+    margin: 0;
+}
+
+.profile-data .row {
+    display: block;
+    padding: 14px 0;
+    border-bottom: 1px dashed rgba(0, 0, 0, .07);
+}
+
+.profile-data .row:last-child {
+    border-bottom: 0;
+}
+
+/* Etiquetas */
+.profile-data dt {
+    margin: 0 0 6px;
+    color: #5b6a5b;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+/* Valores */
+.profile-data dd {
+    margin: 0;
+    font-weight: 800;
+    color: #222;
+    line-height: 1.4;
+    font-size: 22px;
+}
+
+/* Acciones */
+.profile-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.btn-edit {
+    display: inline-block;
+    background: #657B68;
+    color: #fff;
+    padding: 10px 22px;
+    border-radius: 10px;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.btn-edit:hover {
+    filter: brightness(.95);
+}
+
+/* Responsive (opcional pero mantiene proporciones) */
+@media (max-width: 560px) {
+
+    .profile-card {
+        padding: 18px;
+    }
+
+    .profile-data dd {
+        font-size: 20px;
+        /* un poco más pequeño en móvil */
+    }
+
+    .profile-actions {
+        justify-content: center;
+    }
+}

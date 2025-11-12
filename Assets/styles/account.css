@@ -47,8 +47,7 @@
     height: 200px;
     object-fit: contain;
     display: block;
-    /* si usas SVG monocromo y quieres pintarlo: */
-    /* filter: invert(65%) sepia(18%) saturate(1059%) hue-rotate(337deg) brightness(94%) contrast(90%); */
+    
 }
 
 .tile-title {
