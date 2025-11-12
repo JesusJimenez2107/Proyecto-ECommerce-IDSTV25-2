@@ -1,0 +1,87 @@
+/* Card + título */
+.profile-card {
+    max-width: 720px;
+    margin: 12px auto 24px;
+    background: #FFF6E9;
+    border: 1px solid #E8DFCF;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .08);
+}
+
+.profile-title {
+    margin: 0 0 16px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 26px;
+    letter-spacing: .6px;
+}
+
+/* Form */
+.profile-form {
+    display: grid;
+    gap: 10px;
+}
+
+.pf-label {
+    font-weight: 700;
+    color: #445944;
+}
+
+.pf-input {
+    border: 1px solid #d6d2c7;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-family: 'Quicksand', sans-serif;
+    font-size: 16px;
+    outline: none;
+}
+
+.pf-input:focus {
+    box-shadow: 0 0 0 3px rgba(101, 123, 104, .18);
+    border-color: #bfc9be;
+}
+
+/* Acciones */
+.pf-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 12px;
+}
+
+.btn-cancel {
+    display: inline-block;
+    border: 1.5px solid #E22929;
+    color: #E22929;
+    background: #fff;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: 800;
+    text-decoration: none;
+    font-size: 18px;
+
+}
+
+.btn-confirm {
+    border: 0;
+    background: #E97E57;
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: 800;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.btn-confirm:hover {
+    filter: brightness(.95);
+}
+
+/* Responsive */
+@media (max-width:560px) {
+    .profile-card {
+        padding: 16px;
+    }
+}
