@@ -1,0 +1,88 @@
+/* Título */
+.account-title {
+    margin: 8px 0 16px;
+    text-align: center;
+    background: #EDE7DB;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+/* Grid de tiles */
+.account-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+/* Tarjeta */
+.tile {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    align-items: center;
+    justify-items: center;
+    gap: 12px;
+
+    background: #FFF7EB;
+    /* crema claro */
+    border: 1px solid #EADFCC;
+    border-radius: 16px;
+    padding: 26px 18px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .08);
+
+    color: #2c3b2c;
+    text-decoration: none;
+    transition: transform .12s ease, box-shadow .12s ease, filter .2s ease;
+}
+
+.tile:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, .12);
+    filter: brightness(0.99);
+}
+
+.tile-icon {
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+    display: block;
+    /* si usas SVG monocromo y quieres pintarlo: */
+    /* filter: invert(65%) sepia(18%) saturate(1059%) hue-rotate(337deg) brightness(94%) contrast(90%); */
+}
+
+.tile-title {
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    text-align: center;
+    font-size: 28px;
+}
+
+/* (eliminar cuenta) */
+.tile-danger {
+    background: #FFF1EE;
+    border-color: #F3C2B8;
+}
+
+.tile-danger .tile-title {
+    color: #BF513B;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .account-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 540px) {
+    .account-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .tile-icon {
+        width: 100px;
+        height: 100px;
+    }
+}
