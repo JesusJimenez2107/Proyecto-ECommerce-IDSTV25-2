@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reportes – Raíz Viva</title>
+
+  <link rel="stylesheet" href="../Assets/styles/global.css" />
+  <link rel="stylesheet" href="../Assets/styles/reportes.css" />
+</head>
+<body>
+  <!-- Topbar global -->
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="/"><img src="../Assets/img/logo.png" alt="Raíz Viva" /></a>
+
+      <div class="nav-dropdown">
+        <button class="nav-dropbtn">Productos
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <nav class="nav-menu" hidden>
+          <a class="nav-menu__item" href="/productos?cat=interior">Plantas de interior</a>
+          <a class="nav-menu__item" href="/productos?cat=exterior">Plantas de exterior</a>
+          <a class="nav-menu__item" href="/productos?cat=bajo-mantenimiento">Bajo mantenimiento</a>
+          <a class="nav-menu__item" href="/productos?cat=aromaticas-comestibles">Aromáticas y comestibles</a>
+          <a class="nav-menu__item" href="/productos?cat=macetas-accesorios">Macetas y accesorios</a>
+          <a class="nav-menu__item" href="/productos?cat=cuidados-bienestar">Cuidados y bienestar</a>
+        </nav>
+      </div>
+
+      <form class="search" role="search">
+        <input type="search" placeholder="Buscar" aria-label="Buscar productos" />
+        <button type="submit" aria-label="Buscar">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#586a58" stroke-width="2">
+            <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+          </svg>
+        </button>
+      </form>
+
+      <div class="actions">
+        <a href="/login" class="action">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+            <path d="M20 21a8 8 0 1 0-16 0"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span>Ingresar</span>
+        </a>
+        <a href="/carrito" class="action">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+            <circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/>
+            <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6"/>
+          </svg>
+          <span>0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/cuenta">Mi Cuenta</a> › <span>Reportes</span>
+    </nav>
+
+    <h1 class="rp-title">REPORTES</h1>
+
+    <!-- Tabs -->
+    <div class="rp-tabs" role="tablist" aria-label="Tipo de reporte">
+      <button class="rp-tab is-active" data-report="ventas" role="tab" aria-selected="true">Ventas</button>
+      <button class="rp-tab" data-report="productos" role="tab" aria-selected="false">Productos más vendidos</button>
+      <button class="rp-tab" data-report="clientes" role="tab" aria-selected="false">Clientes con más compras</button>
+    </div>
+
+    <!-- Filtros -->
+    <form class="rp-filters"
+          action="/reportes" method="get"
+          aria-label="Filtrar por periodo">
+      <input type="hidden" name="tipo" id="rpTipo" value="ventas"/>
+
+      <label class="rp-filter">
+        <span>Inicio</span>
+        <input type="date" name="inicio" id="rpInicio" required />
+      </label>
+
+      <label class="rp-filter">
+        <span>Fin</span>
+        <input type="date" name="fin" id="rpFin" required />
+      </label>
+
+      <button class="btn-primary" type="submit">Buscar</button>
+
+      <div class="rp-export">
+        <a class="btn-outline" id="expCsv" href="/reportes/export/csv?tipo=ventas">CSV</a>
+        <a class="btn-outline" id="expPdf" href="/reportes/export/pdf?tipo=ventas">PDF</a>
+      </div>
+    </form>
+
+    <!-- Resultados -->
+    <section class="rp-results" aria-live="polite">
+      <!-- Tabla de ejemplo (el backend renderiza los datos reales) -->
+      <div class="table-wrap">
+        <table class="rp-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Folio</th>
+              <th>Cliente</th>
+              <th class="num">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Registros dinámicos del backend -->
+            <tr>
+              <td>2025-07-16</td>
+              <td>1111</td>
+              <td>Dean Centeno</td>
+              <td class="num">$560.00</td>
+            </tr>
+            <tr>
+              <td>2025-06-25</td>
+              <td>10052</td>
+              <td>Dean Centeno</td>
+              <td class="num">$320.00</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <th colspan="3" class="right">Total periodo</th>
+              <th class="num">$880.00</th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>© Raíz Viva</p>
+  </footer>
+
+  <script>
+    // ——— Tabs: solo cambian el tipo y los links de exportación
+    const tabs = document.querySelectorAll('.rp-tab');
+    const tipoInput = document.getElementById('rpTipo');
+    const expCsv = document.getElementById('expCsv');
+    const expPdf = document.getElementById('expPdf');
+    const inicio = document.getElementById('rpInicio');
+    const fin = document.getElementById('rpFin');
+
+    tabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabs.forEach(b => { b.classList.remove('is-active'); b.setAttribute('aria-selected','false'); });
+        btn.classList.add('is-active'); btn.setAttribute('aria-selected','true');
+
+        const tipo = btn.dataset.report;          // ventas | productos | clientes
+        tipoInput.value = tipo;
+
+        // Actualiza enlaces de exportación con el tipo y fechas (si ya hay)
+        const i = inicio.value ? `&inicio=${inicio.value}` : '';
+        const f = fin.value ? `&fin=${fin.value}` : '';
+        expCsv.href = `/reportes/export/csv?tipo=${tipo}${i}${f}`;
+        expPdf.href = `/reportes/export/pdf?tipo=${tipo}${i}${f}`;
+      });
+    });
+
+    // ——— Validación simple de rango (Fin no menor a Inicio)
+    inicio.addEventListener('change', () => fin.min = inicio.value || '');
+    fin.addEventListener('change', () => {
+      if (inicio.value && fin.value && fin.value < inicio.value) {
+        alert('La fecha FIN no puede ser menor que INICIO.');
+        fin.value = '';
+      }
+    });
+  </script>
+</body>
+</html>
