@@ -21,7 +21,7 @@
             <h2>REGISTRO</h2>
 
             <!-- FORMULARIO -->
-            <form action="registro.php" method="POST">
+            <form action="app/controllers/usersController.php" method="POST">
 
                 <label for="nombre">Nombre(s)</label>
                 <input type="text" id="nombre" name="nombre" placeholder="Nombre(s)" required>
@@ -44,6 +44,9 @@
                 <p>¿Ya tienes cuenta? <a href="login.html">Inicia sesión</a></p>
 
                 <button type="submit">REGISTRARSE</button>
+
+                <input type="hidden" name="action" value="create_user">
+                
             </form>
 
         </section>
