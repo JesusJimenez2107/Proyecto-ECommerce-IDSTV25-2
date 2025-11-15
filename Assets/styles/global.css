@@ -15,7 +15,6 @@ body {
     font-family: 'Quicksand', sans-serif;
     color: #1d1d1d;
     background: #ADD9B3;
-    /* tu fondo global */
 }
 
 a {
@@ -157,6 +156,28 @@ img {
 
 .action:hover {
     opacity: 1;
+}
+
+/* ===== Breadcrum ===== */
+.breadcrumb{
+  margin: 6px 0 12px;
+  font-size: 14px;
+  color: #5b6a5b;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.breadcrumb a{
+  color:#425742;
+  font-weight:700;
+  text-decoration:none;
+}
+.breadcrumb a:hover{ text-decoration:underline; }
+.breadcrumb .sep{ opacity:.55; }
+.breadcrumb [aria-current="page"]{
+  font-weight:800;
+  color:#3A493A;
 }
 
 /* ===== Contenedor de página compartido ===== */
