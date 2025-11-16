@@ -1,0 +1,249 @@
+.user-detail-page {
+    max-width: 1200px;
+    margin: 18px auto 40px;
+}
+
+/* Bloques generales */
+.user-block {
+    background: #FFF6E9;
+    border: 1px solid #E8DFCF;
+    border-radius: 12px;
+    padding: 18px 20px 20px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+    margin-bottom: 22px;
+}
+
+.user-block__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.user-block__header--sub {
+    align-items: flex-end;
+}
+
+.user-block__title {
+    margin: 0;
+    font-size: 24px;
+    letter-spacing: 0.5px;
+}
+
+/* Botones reutilizables */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 8px 16px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.btn-secondary {
+    background: #657B68;
+    color: #fff;
+}
+
+.btn-secondary:hover {
+    filter: brightness(0.96);
+}
+
+.btn-primary {
+    background: #F28A64;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    filter: brightness(0.96);
+}
+
+.btn-danger {
+    background: #E6554F;
+    color: #fff;
+}
+
+.btn-danger:hover {
+    filter: brightness(0.95);
+}
+
+/* ===== Datos personales ===== */
+
+.user-data {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 32px;
+}
+
+.user-field {
+    min-width: 0;
+}
+
+.user-field--wide {
+    grid-column: 1 / -1;
+}
+
+.user-label {
+    display: block;
+    font-size: 13px;
+    color: #5b6a5b;
+    margin-bottom: 2px;
+    font-weight: 700;
+}
+
+.user-value {
+    margin: 0;
+    font-weight: 800;
+    font-size: 16px;
+    color: #222;
+    line-height: 1.4;
+}
+
+/* ===== Buscador de pedidos ===== */
+
+.orders-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.orders-search__label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #4b5b4b;
+}
+
+.orders-search__input {
+    border-radius: 999px;
+    border: 1px solid #D5CDBD;
+    padding: 6px 10px;
+    min-width: 160px;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+/* ===== Tarjetas de pedidos ===== */
+
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.order-card {
+    background: #FAF3E6;
+    border-radius: 10px;
+    border: 1px solid #E3D9C7;
+    padding: 12px 14px 14px;
+}
+
+.order-card__header {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr 1fr 1fr auto;
+    gap: 10px 14px;
+    align-items: center;
+    background: #829184;
+    padding: 10px 14px;
+    border-radius: 10px 10px 0 0;
+    border-bottom: 1px solid #E3D9C7;
+}
+
+.order-meta__label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 2px;
+}
+
+.order-meta__value {
+    display: block;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.order-meta__status {
+    display: block;
+    font-size: 12px;
+    color: #465846;
+    margin-top: 2px;
+}
+
+.order-card__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+/* Cuerpo del pedido: productos */
+.order-card__body {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.order-product {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    min-width: 260px;
+}
+
+.order-product img {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.order-product__name {
+    margin: 0 0 4px;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.order-product__qty {
+    margin: 0;
+    font-size: 13px;
+    color: #555;
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 900px) {
+    .user-data {
+        grid-template-columns: 1fr;
+    }
+
+    .order-card__header {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .orders-search {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 620px) {
+    .order-card__header {
+        grid-template-columns: 1fr;
+        align-items: flex-start;
+    }
+
+    .order-card__actions {
+        justify-content: flex-start;
+    }
+
+    .orders-search {
+        justify-content: flex-start;
+    }
+}
