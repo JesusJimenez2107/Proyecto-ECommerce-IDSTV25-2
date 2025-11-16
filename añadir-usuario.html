@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Añadir usuario – Panel Admin</title>
+    <link rel="stylesheet" href="../Assets/styles/global.css">
+    <link rel="stylesheet" href="../Assets/styles/admin-usuario-form.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="topbar">
+        <div class="topbar__inner">
+            <a href="home.html" class="brand">
+                <img src="../Assets/img/logo.png" alt="Raíz Viva">
+            </a>
+
+            <div class="nav-dropdown">
+                <button class="nav-dropbtn" aria-haspopup="true" aria-expanded="false">
+                    Productos
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" />
+                    </svg>
+                </button>
+                <nav class="nav-menu" hidden>
+                    <a href="#" class="nav-menu__item">Plantas de interior</a>
+                    <a href="#" class="nav-menu__item">Plantas de exterior</a>
+                    <a href="#" class="nav-menu__item">Macetas y accesorios</a>
+                </nav>
+            </div>
+
+            <!-- Buscador -->
+            <form class="search" role="search">
+                <input type="search" placeholder="Buscar" aria-label="Buscar en el sitio">
+                <button type="submit" aria-label="Buscar">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#586a58" stroke-width="2">
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="m20 20-3.5-3.5" />
+                    </svg>
+                </button>
+            </form>
+
+            <!-- Acciones -->
+            <div class="actions">
+                <a href="login.html" class="action">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+                        <path d="M20 21a8 8 0 1 0-16 0" />
+                        <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    <span>Ingresar</span>
+                </a>
+                <a href="#" class="action">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+                        <circle cx="10" cy="20" r="1" />
+                        <circle cx="18" cy="20" r="1" />
+                        <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6" />
+                    </svg>
+                    <span>0</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="page admin-user-form">
+        <!-- Breadcrumbs -->
+        <nav class="breadcrumbs" aria-label="Ruta de navegación">
+            <a href="panel-admin.html">Panel Admin</a>
+            <span>›</span>
+            <a href="admin-usuarios.html">Usuarios</a>
+            <span>›</span>
+            <span>Añadir usuario</span>
+        </nav>
+
+        <!-- Card con formulario -->
+        <section class="auf-card" aria-labelledby="titulo-add-usuario">
+            <h1 id="titulo-add-usuario">Añadir usuario</h1>
+
+            <form class="auf-form" action="#" method="post">
+                <div class="auf-field">
+                    <label for="nombre">Nombre</label>
+                    <input id="nombre" name="nombre" type="text" required>
+                </div>
+
+                <div class="auf-field">
+                    <label for="apellidos">Apellido(s)</label>
+                    <input id="apellidos" name="apellidos" type="text" required>
+                </div>
+
+                <div class="auf-field">
+                    <label for="correo">Correo</label>
+                    <input id="correo" name="correo" type="email" required>
+                </div>
+
+                <div class="auf-field">
+                    <label for="password">Contraseña</label>
+                    <input id="password" name="password" type="password" required>
+                </div>
+
+                <div class="auf-field">
+                    <label for="direccion">Dirección</label>
+                    <input id="direccion" name="direccion" type="text">
+                </div>
+
+                <div class="auf-field">
+                    <label for="telefono">Teléfono</label>
+                    <input id="telefono" name="telefono" type="tel">
+                </div>
+
+                <div class="auf-field">
+                    <label for="rol">Rol</label>
+                    <select id="rol" name="rol" required>
+                        <option value="" selected disabled>Selecciona uno</option>
+                        <option value="admin">Administrador</option>
+                        <option value="cliente">Comprador / Vendedor</option>
+                    </select>
+                </div>
+
+                <div class="auf-actions">
+                    <button type="button" class="btn-cancelar">Cancelar</button>
+                    <button type="submit" class="btn-confirmar">Confirmar</button>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>© Raíz Viva</p>
+    </footer>
+</body>
+
+</html>
