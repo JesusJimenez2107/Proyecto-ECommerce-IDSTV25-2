@@ -1,0 +1,332 @@
+/* ----- Breadcrumbs de la vista ----- */
+.breadcrumb {
+    margin: 6px 0 12px;
+    font-size: 14px;
+    color: #5b6a5b;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.breadcrumb a {
+    color: #425742;
+    font-weight: 700;
+}
+
+.breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.breadcrumb .sep {
+    opacity: .55;
+}
+
+.breadcrumb [aria-current="page"] {
+    font-weight: 800;
+    color: #3A493A;
+}
+
+/* ----- Contenedor del form ----- */
+.prod-form-card {
+    background: #FFF6E9;
+    border: 1px solid #E8DFCF;
+    border-radius: 12px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .08);
+    padding: 16px;
+}
+
+.pf-title {
+    margin: 0 0 12px;
+    font-weight: 800;
+    letter-spacing: .6px;
+    color: #3A493A;
+}
+
+/* ----- Grid del form ----- */
+.pf {
+    display: grid;
+    gap: 18px;
+}
+
+/* ====== FOTOS ====== */
+.pf-photos {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 60px; 
+}
+
+.pf-photos>legend {
+    grid-column: 1 / -1;
+    font-weight: 800;
+    color: #3A493A;
+    margin-bottom: 8px;
+}
+
+.pf-photo {
+    background: #fff;
+    border: 1px dashed #D9D1C0;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+}
+
+.pf-photo__label {
+    display: block;
+    font-weight: 800;
+    color: #3A493A;
+    margin-bottom: 8px;
+}
+
+.pf-photo__frame {
+    border: 1px solid #E6E1D7;
+    border-radius: 12px;
+    height: 220px;
+    display: grid;
+    place-items: center;
+    background: #FAFAFA;
+    margin-bottom: 10px;
+}
+
+.pf-photo__frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.pf-photo__input {
+    position: absolute;
+    inset: 0;
+    width: 0;
+    height: 0;
+    opacity: 0;
+}
+
+.pf-photo__drop {
+    display: inline-block;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: #EDE7DB;
+    color: #3A493A;
+    font-weight: 800;
+    border: 1px solid #D9D1C0;
+    cursor: pointer;
+}
+
+.pf-photo__drop:focus {
+    outline: 2px solid #657B68;
+    outline-offset: 2px;
+}
+
+/* ====== CAMPOS ====== */
+.pf-fields {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 1fr;
+    column-gap: 14px;
+    grid-template-areas:
+        "name category price"
+        "desc  desc     stock";
+    gap: 16px;
+}
+
+.pf-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pf-field label {
+    font-weight: 800;
+    color: #3A493A;
+}
+
+.pf-field input[type="text"],
+.pf-field input[type="number"],
+.pf-field select,
+.pf-field textarea {
+    border: 1px solid #D9D1C0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 15px;
+    background: #fff;
+}
+
+.pf-field textarea {
+    resize: vertical;
+}
+
+.pf-field input:focus,
+.pf-field select:focus,
+.pf-field textarea:focus {
+    outline: 2px solid #657B68;
+    outline-offset: 2px;
+}
+
+/* Areas */
+.pf-field:nth-child(1) {
+    grid-area: name;
+}
+
+.pf-field:nth-child(2) {
+    grid-area: category;
+}
+
+.pf-price {
+    grid-area: price;
+}
+
+.pf-desc {
+    grid-area: desc;
+}
+
+.pf-stock {
+    grid-area: stock;
+    width: 220px;
+}
+
+/* Precio */
+.pf-price .pf-money {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #D9D1C0;
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: #fff;
+}
+
+.pf-price .pf-money>span {
+    font-weight: 800;
+    color: #3A493A;
+}
+
+.pf-price .pf-money input {
+    border: 0;
+    outline: 0;
+    width: 100%;
+    font-size: 15px;
+}
+
+.pf-hint {
+    color: #7a7a7a;
+}
+
+/* Stock */
+.pf-stock-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #D9D1C0;
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: #fff;
+}
+
+.pf-stock-inline>span {
+    font-weight: 800;
+    color: #3A493A;
+}
+
+.pf-stock-inline input {
+    width: 72px;
+    text-align: center;
+    border: 0;
+    outline: 0;
+    font-weight: 700;
+}
+
+/* ====== ACCIONES ====== */
+.pf-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.btn-primary {
+    background: #E07A5F;
+    color: #fff;
+    border: 0;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-weight: 800;
+}
+
+.btn-primary:hover {
+    filter: brightness(.98);
+}
+
+.btn-outline {
+    border: 1.5px solid #657B68;
+    color: #657B68;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-weight: 800;
+}
+
+.btn-outline:hover {
+    background: #EFF3EF;
+}
+
+.btn-danger {
+    background: #EE5E5E;
+    color: #fff;
+    border: 0;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-weight: 800;
+}
+
+.btn-danger:hover {
+    filter: brightness(.96);
+}
+
+/* ====== Responsive ====== */
+@media (max-width: 980px) {
+    .pf-photos {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .pf-fields {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+            "name name"
+            "category price"
+            "desc desc"
+            "stock stock";
+    }
+
+    .pf-stock {
+        width: 100%;
+    }
+}
+
+@media (max-width: 560px) {
+    .pf-photos {
+        grid-template-columns: 1fr;
+    }
+
+    .pf-fields {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "name"
+            "category"
+            "price"
+            "desc"
+            "stock";
+    }
+
+    .pf-actions {
+        flex-direction: column;
+    }
+
+    .pf-actions .btn-outline,
+    .pf-actions .btn-primary {
+        width: 100%;
+        text-align: center;
+    }
+}
