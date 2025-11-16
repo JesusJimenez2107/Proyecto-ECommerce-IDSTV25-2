@@ -1,0 +1,218 @@
+/* ===== Layout general de la vista de usuarios ===== */
+
+.admin-users {
+    padding: 8px 16px 32px;
+}
+
+/* Título */
+
+.au-header {
+    max-width: 1200px;
+    margin: 0 auto 10px;
+    background: #fff6e9;
+    border-radius: 10px;
+    padding: 14px 20px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.au-header h1 {
+    margin: 0;
+    text-align: center;
+    font-size: 32px;
+    letter-spacing: 1px;
+}
+
+/* ===== Toolbar: búsqueda + botón añadir ===== */
+
+.au-toolbar {
+    max-width: 1200px;
+    margin: 10px auto 18px;
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: flex-end;
+}
+
+.au-search-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.au-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #425742;
+}
+
+.au-search {
+    display: flex;
+    gap: 8px;
+}
+
+.au-search input {
+    min-width: 220px;
+    padding: 8px 10px;
+    border-radius: 20px;
+    border: 1px solid #c9d5c9;
+    font-family: inherit;
+}
+
+/* Botones reutilizables de esta vista */
+
+.btn-primary {
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    background: #657b68;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    filter: brightness(0.95);
+}
+
+.btn-secondary {
+    border: none;
+    border-radius: 20px;
+    padding: 10px 18px;
+    background: #f07f53;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-secondary:hover {
+    filter: brightness(0.96);
+}
+
+/* ===== Tabla de usuarios (estilo tipo tarjetas) ===== */
+
+.au-table {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: #fff6e9;
+    border-radius: 12px;
+    padding: 10px 14px 18px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Cada fila se comporta como un grid */
+
+.au-row {
+    display: grid;
+    grid-template-columns: 130px 1.7fr 1.8fr 130px;
+    align-items: center;
+    column-gap: 16px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f5f1e3;
+    margin-top: 8px;
+}
+
+/* Encabezado */
+
+.au-row--head {
+    background: #e7dfd1;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 0.8px;
+    margin-top: 0;
+}
+
+.au-row--head .au-col {
+    padding-bottom: 2px;
+}
+
+/* Columnas */
+
+.au-col-id {
+    font-weight: 700;
+}
+
+.au-col-name,
+.au-col-email {
+    font-size: 15px;
+}
+
+.au-col-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* Botones de iconos */
+
+.icon-btn {
+    border: none;
+    padding: 7px 9px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #dfe7df;
+    color: #657b68;
+}
+
+.icon-btn.info {
+    background: #e4f0e4;
+    color: #657b68;
+}
+
+.icon-btn.danger {
+    background: #ffe2d7;
+    color: #e46a3a;
+}
+
+.icon-btn:hover {
+    filter: brightness(0.96);
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+    .au-row {
+        grid-template-columns: 90px 1.4fr 1.6fr 100px;
+        column-gap: 8px;
+    }
+
+    .au-col-name,
+    .au-col-email {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 640px) {
+    .au-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .au-search {
+        width: 100%;
+    }
+
+    .au-search input {
+        flex: 1;
+    }
+
+    .au-row {
+        grid-template-columns: 1fr;
+        row-gap: 6px;
+        text-align: left;
+    }
+
+    .au-col-actions {
+        justify-content: flex-start;
+    }
+
+    .au-row--head {
+        display: none;
+        /* Encabezado se oculta en móvil */
+    }
+}
