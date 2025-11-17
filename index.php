@@ -1,3 +1,7 @@
+<?php
+session_start();
+$logged = isset($_SESSION['email']); 
+?>
 <!DOCTYPE html>
 <html lang="es">
 
@@ -5,15 +9,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Raíz Viva – Inicio</title>
-    <link rel="stylesheet" href="../Assets/styles/global.css" />
-    <link rel="stylesheet" href="../Assets/styles/home.css">
+    <link rel="stylesheet" href="Assets/styles/global.css" />
+    <link rel="stylesheet" href="Assets/styles/home.css">
 </head>
 
 <body>
     <header class="topbar">
         <div class="topbar__inner">
             <a class="brand" href="#">
-                <img src="../Assets/img/logo.png" alt="Raíz Viva" />
+                <img src="Assets/img/logo.png" alt="Raíz Viva" />
             </a>
 
             <div class="nav-dropdown">
@@ -66,14 +70,26 @@
             </form>
 
             <div class="actions">
-                <a href="login.html" class="action">
-                    <!-- usuario -->
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                        <path d="M20 21a8 8 0 1 0-16 0" />
-                        <circle cx="12" cy="7" r="4" />
-                    </svg>
-                    <span>Ingresar</span>
-                </a>
+
+                <?php if ($logged): ?>                   
+                    <a href="cuenta-datos.html" class="action">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+                            <path d="M20 21a8 8 0 1 0-16 0" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <span>Mi cuenta</span>
+                    </a>
+                <?php else: ?>
+                    <a href="login.html" class="action">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+                            <path d="M20 21a8 8 0 1 0-16 0" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <span>Ingresar</span>
+                    </a>
+                <?php endif; ?>
+
+
                 <a href="#" class="action">
                     <!-- carrito -->
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
@@ -89,7 +105,7 @@
 
     <!-- banner -->
     <section class="banner">
-        <img src="../Assets/img/banner-new-arrivals.jpg" alt="New Plants Arrival">
+        <img src="Assets/img/banner-new-arrivals.jpg" alt="New Plants Arrival">
     </section>
 
     <main class="page">
@@ -97,32 +113,32 @@
         <!-- CATEGORÍAS -->
         <section class="categories" aria-label="Categorías">
             <a class="card" href="productos.html">
-                <img src="../Assets/img/cat-interior.png" alt="Plantas de interior">
+                <img src="Assets/img/cat-interior.png" alt="Plantas de interior">
                 <h3>PLANTAS DE<br>INTERIOR</h3>
             </a>
 
             <a class="card" href="productos.html">
-                <img src="../Assets/img/cat-exterior.png" alt="Plantas de exterior">
+                <img src="Assets/img/cat-exterior.png" alt="Plantas de exterior">
                 <h3>PLANTAS DE<br>EXTERIOR</h3>
             </a>
 
             <a class="card" href="productos.html">
-                <img src="../Assets/img/cat-bajo.png" alt="Bajo mantenimiento">
+                <img src="Assets/img/cat-bajo.png" alt="Bajo mantenimiento">
                 <h3>BAJO<br>MANTENIMIENTO</h3>
             </a>
 
             <a class="card" href="productos.html">
-                <img src="../Assets/img/cat-aromatica.png" alt="Aromáticas y comestibles">
+                <img src="Assets/img/cat-aromatica.png" alt="Aromáticas y comestibles">
                 <h3>AROMÁTICAS Y<br>COMESTIBLES</h3>
             </a>
 
             <a class="card" href="productos.html">
-                <img src="../Assets/img/cat-macetas.png" alt="Macetas y accesorios">
+                <img src="Assets/img/cat-macetas.png" alt="Macetas y accesorios">
                 <h3>MACETAS Y<br>ACCESORIOS</h3>
             </a>
 
             <a class="card" href="productos.html">
-                <img src="../Assets/img/cat-cuidados.png" alt="Cuidados y bienestar">
+                <img src="Assets/img/cat-cuidados.png" alt="Cuidados y bienestar">
                 <h3>CUIDADOS Y<br>BIENESTAR</h3>
             </a>
         </section>
