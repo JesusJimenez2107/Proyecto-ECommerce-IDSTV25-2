@@ -192,7 +192,7 @@
     gap: 12px;
 }
 
-/* Botones SOLO para esta vista (no modifican global) */
+/* Botones */
 .btn-primary {
     background: #E07A5F;
     color: #fff;
@@ -210,8 +210,8 @@
 }
 
 .btn-outline {
-    border: 1.5px solid #657B68;
-    color: #657B68;
+    border: 1.5px solid #FF0000;
+    color: #FF0000;
     border-radius: 10px;
     padding: 10px 16px;
     font-weight: 800;

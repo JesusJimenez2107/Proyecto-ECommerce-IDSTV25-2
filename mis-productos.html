@@ -64,22 +64,20 @@
     </header>
     <main class="page">
         <nav class="breadcrumb" aria-label="Breadcrumb">
-            <a href="/cuenta">Mi Cuenta</a>
+            <a href="mi-cuenta.html">Mi Cuenta</a>
             <span class="sep">›</span>
-            <a href="/vendedor">Panel</a>
-            <span class="sep">›</span>
-            <span aria-current="page">Mis productos</span>
+            <span>Mis productos</span>
         </nav>
         <div class="seller-head">
             <h1 class="seller-title">MIS PRODUCTOS</h1>
-            <a class="btn-primary seller-add" href="/vendedor/productos/nuevo">Agregar producto</a>
+            <a class="btn-primary seller-add" href="agregar-producto.html">Agregar producto</a>
         </div>
 
         <!-- GRID -->
         <section class="seller-grid" aria-label="Listado de productos">
             <!-- Tarjeta -->
             <article class="seller-card">
-                <a class="thumb" href="/producto/1111">
+                <a class="thumb" href="editar-producto.html">
                     <img src="../Assets/img/monstera_1.jpg" alt="Monstera Deliciosa">
                 </a>
                 <h3 class="item-title">Monstera Deliciosa</h3>
@@ -96,13 +94,13 @@
                         <!-- <input type="hidden" name="_token" value="CSRF_TOKEN"> -->
                         <button type="submit" class="btn-danger">Eliminar</button>
                     </form>
-                    <a href="/vendedor/productos/1111/editar" class="btn-outline">Editar</a>
+                    <a href="editar-producto.html" class="btn-outline">Editar</a>
                 </div>
             </article>
 
             <!-- Duplica artículos para más productos -->
             <article class="seller-card">
-                <a class="thumb" href="/producto/1112">
+                <a class="thumb" href="editar-producto.html">
                     <img src="../Assets/img/monstera_1.jpg" alt="Monstera Deliciosa">
                 </a>
                 <h3 class="item-title">Monstera Deliciosa</h3>
@@ -115,7 +113,7 @@
                         <input type="hidden" name="_method" value="DELETE">
                         <button type="submit" class="btn-danger">Eliminar</button>
                     </form>
-                    <a href="/vendedor/productos/1112/editar" class="btn-outline">Editar</a>
+                    <a href="editar-producto.html" class="btn-outline">Editar</a>
                 </div>
             </article>
 
