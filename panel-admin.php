@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mi cuenta – Raíz Viva</title>
+  <title>Panel Administración – Raíz Viva</title>
 
   <link rel="stylesheet" href="../Assets/styles/global.css" />
   <link rel="stylesheet" href="../Assets/styles/account.css" />
@@ -58,36 +58,36 @@
   </header>
 
   <main class="page">
-    <h1 class="account-title">MI CUENTA</h1>
+    <h1 class="account-title">PANEL ADMINISTRACIÓN</h1>
 
     <!-- Grid de accesos -->
     <section class="account-grid" aria-label="Accesos de cuenta">
-      <a class="tile" href="cuenta-datos.html">
+      <a class="tile" href="cuenta-datos-admin.html">
         <img class="tile-icon" src="../Assets/icons/id-card.svg" alt="" aria-hidden="true">
         <span class="tile-title">Datos personales</span>
       </a>
 
-      <a class="tile" href="mis-productos.html">
+      <a class="tile" href="usuarios.html">
+        <img class="tile-icon" src="../Assets/icons/People.svg" alt="" aria-hidden="true">
+        <span class="tile-title">USUARIOS</span>
+      </a>
+
+      <a class="tile" href="productos-admin.html">
         <img class="tile-icon" src="../Assets/icons/boxes.svg" alt="" aria-hidden="true">
-        <span class="tile-title">Mis productos</span>
+        <span class="tile-title">PRODUCTOS</span>
       </a>
 
-      <a class="tile" href="mis-compras.html">
-        <img class="tile-icon" src="../Assets/icons/bag.svg" alt="" aria-hidden="true">
-        <span class="tile-title">Mis compras</span>
-      </a>
-
-      <a class="tile" href="">
+      <a class="tile" href="logout.php">
         <img class="tile-icon" src="../Assets/icons/logout.svg" alt="" aria-hidden="true">
         <span class="tile-title">Cerrar sesión</span>
       </a>
 
-      <a class="tile tile-danger" href="">
+      <a class="tile tile-danger" href="r">
         <img class="tile-icon" src="../Assets/icons/delete-account.svg" alt="" aria-hidden="true">
         <span class="tile-title">Eliminar cuenta</span>
       </a>
 
-      <a class="tile" href="reportes.html">
+      <a class="tile" href="reportes-admin.html">
         <img class="tile-icon" src="../Assets/icons/report.svg" alt="" aria-hidden="true">
         <span class="tile-title">Reportes</span>
       </a>

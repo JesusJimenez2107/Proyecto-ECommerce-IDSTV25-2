@@ -54,7 +54,7 @@ class AuthController{
                     $_SESSION['rol'] = $users[0]['rol'];
                     
                     if ($users[0]['rol'] == "admin") {
-                        header("Location: ../../panel-admin.html");
+                        header("Location: ../../panel-admin.php");
                     } else {
                         header("Location: ../../index.php");
                     }

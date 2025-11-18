@@ -72,7 +72,7 @@ $logged = isset($_SESSION['email']);
             <div class="actions">
 
                 <?php if ($logged): ?>                   
-                    <a href="cuenta-datos.html" class="action">
+                    <a href="mi-cuenta.php" class="action">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
                             <path d="M20 21a8 8 0 1 0-16 0" />
                             <circle cx="12" cy="7" r="4" />
