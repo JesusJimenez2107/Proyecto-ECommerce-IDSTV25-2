@@ -21,7 +21,7 @@
             <h2>REGISTRO</h2>
 
             <!-- FORMULARIO -->
-            <form action="app/controllers/usersController.php" method="POST">
+            <form action="app/controllers/usersController.php" method="POST" onsubmit="return validateRegister()">
 
                 <label for="nombre">Nombre(s)</label>
                 <input type="text" id="nombre" name="nombre" placeholder="Nombre(s)" required>
@@ -56,5 +56,6 @@
             <img src="../Assets/img/img-logo.png" alt="Plantas decorativas">
         </section>
 
+         <script src="./Assets/js/validaciones.js"></script>
 </body>
 </html>
