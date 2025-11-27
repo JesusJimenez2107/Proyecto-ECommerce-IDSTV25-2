@@ -70,3 +70,52 @@ function validateRegister() {
     
     return isValid;
 }
+
+//dnskjndkdks
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    
+    const photoContainers = document.querySelectorAll(".pf-photo");
+
+    photoContainers.forEach(container => {
+
+        const input = container.querySelector(".pf-photo__input");
+        const frame = container.querySelector(".pf-photo__frame");
+        const removeBtn = container.querySelector(".pf-photo__remove");
+        const label = container.querySelector(".pf-photo__drop");
+
+        // para ver la imagen del producto enel recuadro antes de crear el producto
+        input.addEventListener("change", function () {
+            const file = this.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+                    frame.style.backgroundImage = `url('${e.target.result}')`;
+                    frame.style.backgroundSize = "cover";
+                    frame.style.backgroundPosition = "center";
+                    frame.style.border = "none";
+
+                    label.style.display = "none";
+                    removeBtn.disabled = false;
+                };
+
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // elimina la imagen del recuadro antes de crear el producto
+        removeBtn.addEventListener("click", function () {
+
+            input.value = "";                 
+            frame.style.backgroundImage = ""; 
+            frame.style.border = "";          
+            label.style.display = "block";    
+
+            removeBtn.disabled = true;
+        });
+    });
+
+});

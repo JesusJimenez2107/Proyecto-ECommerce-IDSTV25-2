@@ -1,6 +1,6 @@
 <?php
 session_start();
-$logged = isset($_SESSION['email']); 
+$logged = isset($_SESSION['email']) && !empty($_SESSION['email']); 
 ?>
 <!DOCTYPE html>
 <html lang="es">

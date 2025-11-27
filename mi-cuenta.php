@@ -13,14 +13,14 @@ if (!isset($_SESSION['email'])) {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mi cuenta – Raíz Viva</title>
 
-  <link rel="stylesheet" href="../Assets/styles/global.css" />
-  <link rel="stylesheet" href="../Assets/styles/account.css" />
+  <link rel="stylesheet" href="Assets/styles/global.css" />
+  <link rel="stylesheet" href="Assets/styles/account.css" />
 </head>
 <body>
   <!-- Header global -->
   <header class="topbar">
     <div class="topbar__inner">
-      <a class="brand" href="index.php"><img src="../Assets/img/logo.png" alt="Raíz Viva" /></a>
+      <a class="brand" href="index.php"><img src="Assets/img/logo.png" alt="Raíz Viva" /></a>
 
       <div class="nav-dropdown">
         <button class="nav-dropbtn">Productos
@@ -48,11 +48,11 @@ if (!isset($_SESSION['email'])) {
       </form>
 
       <div class="actions">
-        <a href="/login" class="action">
+        <a href="#" class="action">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
             <path d="M20 21a8 8 0 1 0-16 0" /><circle cx="12" cy="7" r="4" />
           </svg>
-          <span>Ingresar</span>
+          <span>Mi cuenta</span>
         </a>
         <a href="/carrito" class="action">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
@@ -71,32 +71,32 @@ if (!isset($_SESSION['email'])) {
     <!-- Grid de accesos -->
     <section class="account-grid" aria-label="Accesos de cuenta">
       <a class="tile" href="cuenta-datos.html">
-        <img class="tile-icon" src="../Assets/icons/id-card.svg" alt="" aria-hidden="true">
+        <img class="tile-icon" src="Assets/icons/id-card.svg" alt="" aria-hidden="true">
         <span class="tile-title">Datos personales</span>
       </a>
 
-      <a class="tile" href="mis-productos.html">
-        <img class="tile-icon" src="../Assets/icons/boxes.svg" alt="" aria-hidden="true">
+      <a class="tile" href="mis-productos.php">
+        <img class="tile-icon" src="Assets/icons/boxes.svg" alt="" aria-hidden="true">
         <span class="tile-title">Mis productos</span>
       </a>
 
       <a class="tile" href="mis-compras.html">
-        <img class="tile-icon" src="../Assets/icons/bag.svg" alt="" aria-hidden="true">
+        <img class="tile-icon" src="Assets/icons/bag.svg" alt="" aria-hidden="true">
         <span class="tile-title">Mis compras</span>
       </a>
 
       <a class="tile" href="logout.php">
-        <img class="tile-icon" src="../Assets/icons/logout.svg" alt="" aria-hidden="true">
+        <img class="tile-icon" src="Assets/icons/logout.svg" alt="" aria-hidden="true">
         <span class="tile-title">Cerrar sesión</span>
       </a>
 
       <a class="tile tile-danger" href="">
-        <img class="tile-icon" src="../Assets/icons/delete-account.svg" alt="" aria-hidden="true">
+        <img class="tile-icon" src="Assets/icons/delete-account.svg" alt="" aria-hidden="true">
         <span class="tile-title">Eliminar cuenta</span>
       </a>
 
       <a class="tile" href="reportes.html">
-        <img class="tile-icon" src="../Assets/icons/report.svg" alt="" aria-hidden="true">
+        <img class="tile-icon" src="Assets/icons/report.svg" alt="" aria-hidden="true">
         <span class="tile-title">Reportes</span>
       </a>
     </section>

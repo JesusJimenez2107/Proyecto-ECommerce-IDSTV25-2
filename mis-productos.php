@@ -1,3 +1,16 @@
+
+<?php
+session_start();
+include "app/config/connectionController.php";
+
+$conn = (new ConnectionController())->connect();
+
+
+$email = $_SESSION['email'] ?? null;
+
+$query = "SELECT producto_id, nombre, precio, stock, imagen FROM producto ORDER BY producto_id DESC";
+$result = $conn->query($query);
+?>
 <!DOCTYPE html>
 <html lang="es">
 
@@ -6,15 +19,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Reportes – Raíz Viva</title>
 
-    <link rel="stylesheet" href="../Assets/styles/global.css" />
-    <link rel="stylesheet" href="../Assets/styles/mis-productos.css" />
+    <link rel="stylesheet" href="Assets/styles/global.css" />
+    <link rel="stylesheet" href="Assets/styles/mis-productos.css" />
 </head>
 
 <body>
     <!-- Topbar global -->
     <header class="topbar">
         <div class="topbar__inner">
-            <a class="brand" href="/"><img src="../Assets/img/logo.png" alt="Raíz Viva" /></a>
+            <a class="brand" href="/"><img src="Assets/img/logo.png" alt="Raíz Viva" /></a>
 
             <div class="nav-dropdown">
                 <button class="nav-dropbtn">Productos
@@ -64,7 +77,7 @@
     </header>
     <main class="page">
         <nav class="breadcrumb" aria-label="Breadcrumb">
-            <a href="mi-cuenta.html">Mi Cuenta</a>
+            <a href="mi-cuenta.php">Mi Cuenta</a>
             <span class="sep">›</span>
             <span>Mis productos</span>
         </nav>
@@ -75,50 +88,41 @@
 
         <!-- GRID -->
         <section class="seller-grid" aria-label="Listado de productos">
-            <!-- Tarjeta -->
+        <?php while ($row = $result->fetch_assoc()): ?>
             <article class="seller-card">
-                <a class="thumb" href="editar-producto.html">
-                    <img src="../Assets/img/monstera_1.jpg" alt="Monstera Deliciosa">
+
+                <a class="thumb" href="editar-producto.php?id=<?php echo $row['producto_id']; ?>">
+                    <img src="<?php echo $row['imagen']; ?>" alt="<?php echo $row['nombre']; ?>">
                 </a>
-                <h3 class="item-title">Monstera Deliciosa</h3>
+
+                <h3 class="item-title"><?php echo $row['nombre']; ?></h3>
 
                 <div class="item-meta">
-                    <span class="price">$250.00</span>
-                    <!-- usa .stock-low si queda poco -->
-                    <span class="stock">Stock: <strong>45</strong> disponibles</span>
+                    <span class="price">$<?php echo number_format($row['precio'], 2); ?></span>
+
+                    <?php if ($row['stock'] <= 3): ?>
+                        <span class="stock stock-low">Stock: <strong><?php echo $row['stock']; ?></strong> disponibles</span>
+                    <?php else: ?>
+                        <span class="stock">Stock: <strong><?php echo $row['stock']; ?></strong> disponibles</span>
+                    <?php endif; ?>
                 </div>
 
                 <div class="item-actions">
-                    <form action="/vendedor/productos/1111/eliminar" method="post" class="inline">
-                        <input type="hidden" name="_method" value="DELETE">
-                        <!-- <input type="hidden" name="_token" value="CSRF_TOKEN"> -->
+
+                        <!-- ELIMINAR -->
+                    <form action="app/controllers/productDeleteController.php" method="post" class="inline">
+                        <input type="hidden" name="id" value="<?php echo $row['producto_id']; ?>">
                         <button type="submit" class="btn-danger">Eliminar</button>
                     </form>
-                    <a href="editar-producto.html" class="btn-outline">Editar</a>
-                </div>
-            </article>
 
-            <!-- Duplica artículos para más productos -->
-            <article class="seller-card">
-                <a class="thumb" href="editar-producto.html">
-                    <img src="../Assets/img/monstera_1.jpg" alt="Monstera Deliciosa">
-                </a>
-                <h3 class="item-title">Monstera Deliciosa</h3>
-                <div class="item-meta">
-                    <span class="price">$250.00</span>
-                    <span class="stock stock-low">Stock: <strong>3</strong> disponibles</span>
+                        <!-- EDITAR -->
+                    <a href="editar-producto.php?id=<?php echo $row['producto_id']; ?>" class="btn-outline">Editar</a>
                 </div>
-                <div class="item-actions">
-                    <form action="/vendedor/productos/1112/eliminar" method="post" class="inline">
-                        <input type="hidden" name="_method" value="DELETE">
-                        <button type="submit" class="btn-danger">Eliminar</button>
-                    </form>
-                    <a href="editar-producto.html" class="btn-outline">Editar</a>
-                </div>
-            </article>
 
-            <!-- ...más cards -->
+            </article>
+        <?php endwhile; ?>
         </section>
+
 
         <!-- Paginación (opcional) -->
         <nav class="seller-pager" aria-label="Paginación">
