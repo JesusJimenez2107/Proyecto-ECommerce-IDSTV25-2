@@ -1,15 +1,22 @@
 
 <?php
 session_start();
+
+if (!isset($_SESSION['usuario_id'])) {
+    header("Location: login.html");
+    exit();
+}
+
 include "app/config/connectionController.php";
 
 $conn = (new ConnectionController())->connect();
+$usuario_id = $_SESSION['usuario_id'];
 
-
-$email = $_SESSION['email'] ?? null;
-
-$query = "SELECT producto_id, nombre, precio, stock, imagen FROM producto ORDER BY producto_id DESC";
-$result = $conn->query($query);
+$query = "SELECT * FROM producto WHERE usuario_id = ?";
+$stmt = $conn->prepare($query);
+$stmt->bind_param("i", $usuario_id);
+$stmt->execute();
+$result = $stmt->get_result();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -27,7 +34,7 @@ $result = $conn->query($query);
     <!-- Topbar global -->
     <header class="topbar">
         <div class="topbar__inner">
-            <a class="brand" href="/"><img src="Assets/img/logo.png" alt="Raíz Viva" /></a>
+            <a class="brand" href="index.php"><img src="Assets/img/logo.png" alt="Raíz Viva" /></a>
 
             <div class="nav-dropdown">
                 <button class="nav-dropbtn">Productos
@@ -83,7 +90,7 @@ $result = $conn->query($query);
         </nav>
         <div class="seller-head">
             <h1 class="seller-title">MIS PRODUCTOS</h1>
-            <a class="btn-primary seller-add" href="agregar-producto.html">Agregar producto</a>
+            <a class="btn-primary seller-add" href="agregar-producto.php">Agregar producto</a>
         </div>
 
         <!-- GRID -->
@@ -110,8 +117,10 @@ $result = $conn->query($query);
                 <div class="item-actions">
 
                         <!-- ELIMINAR -->
-                    <form action="app/controllers/productDeleteController.php" method="post" class="inline">
-                        <input type="hidden" name="id" value="<?php echo $row['producto_id']; ?>">
+                    <form action="app/controllers/productController.php" method="post" class="inline">
+                        <input type="hidden" name="action" value="delete_product">
+
+                        <input type="hidden" name="producto_id" value="<?php echo $row['producto_id']; ?>">
                         <button type="submit" class="btn-danger">Eliminar</button>
                     </form>
 

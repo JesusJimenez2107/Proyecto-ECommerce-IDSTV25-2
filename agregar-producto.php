@@ -1,3 +1,12 @@
+<?php
+session_start();
+
+// Validar sesión
+if (!isset($_SESSION['usuario_id'])) {
+    header("Location: login.html");
+    exit();
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
 
@@ -163,7 +172,7 @@
 
                 <!-- ACCIONES -->
                 <div class="pf-actions">
-                    <a href="" class="btn-outline">Cancelar</a>
+                    <a href="mis-productos.php" class="btn-outline">Cancelar</a>
                     <button type="submit" class="btn-primary">Guardar cambios</button>
                 </div>
             </form>

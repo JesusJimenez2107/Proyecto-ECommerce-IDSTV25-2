@@ -16,7 +16,7 @@ $logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
 <body>
     <header class="topbar">
         <div class="topbar__inner">
-            <a class="brand" href="#">
+            <a class="brand" href="index.php">
                 <img src="Assets/img/logo.png" alt="Raíz Viva" />
             </a>
 
@@ -32,27 +32,27 @@ $logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
 
                 <!-- Menú de categorías -->
                 <nav class="nav-menu" id="menuProductos" role="menu" hidden>
-                    <a role="menuitem" href="productos.html" class="nav-menu__item">
+                    <a role="menuitem" href="productos.php?cat=1" class="nav-menu__item">
                         Plantas de interior
                     </a>
 
-                    <a role="menuitem" href="productos.html" class="nav-menu__item">
+                    <a role="menuitem" href="productos.php?cat=2" class="nav-menu__item">
                         Plantas de exterior
                     </a>
 
-                    <a role="menuitem" href="productos.html" class="nav-menu__item">
+                    <a role="menuitem" href="productos.php?cat=3" class="nav-menu__item">
                         Bajo mantenimiento
                     </a>
 
-                    <a role="menuitem" href="productos.html" class="nav-menu__item">
+                    <a role="menuitem" href="productos.php?cat=4" class="nav-menu__item">
                         Aromáticas y comestibles
                     </a>
 
-                    <a role="menuitem" href="productos.html" class="nav-menu__item">
+                    <a role="menuitem" href="productos.php?cat=5" class="nav-menu__item">
                         Macetas y accesorios
                     </a>
 
-                    <a role="menuitem" href="productos.html" class="nav-menu__item">
+                    <a role="menuitem" href="productos.php?cat=6" class="nav-menu__item">
                         Cuidados y bienestar
                     </a>
                 </nav>
@@ -90,7 +90,7 @@ $logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
                 <?php endif; ?>
 
 
-                <a href="#" class="action">
+                <a href="carrito.php" class="action">
                     <!-- carrito -->
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
                         <circle cx="10" cy="20" r="1" />
@@ -112,32 +112,32 @@ $logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
 
         <!-- CATEGORÍAS -->
         <section class="categories" aria-label="Categorías">
-            <a class="card" href="productos.html">
+            <a class="card" href="productos.php?cat=1">
                 <img src="Assets/img/cat-interior.png" alt="Plantas de interior">
                 <h3>PLANTAS DE<br>INTERIOR</h3>
             </a>
 
-            <a class="card" href="productos.html">
+            <a class="card" href="productos.php?cat=2">
                 <img src="Assets/img/cat-exterior.png" alt="Plantas de exterior">
                 <h3>PLANTAS DE<br>EXTERIOR</h3>
             </a>
 
-            <a class="card" href="productos.html">
+            <a class="card" href="productos.php?cat=3">
                 <img src="Assets/img/cat-bajo.png" alt="Bajo mantenimiento">
                 <h3>BAJO<br>MANTENIMIENTO</h3>
             </a>
 
-            <a class="card" href="productos.html">
+            <a class="card" href="productos.php?cat=4">
                 <img src="Assets/img/cat-aromatica.png" alt="Aromáticas y comestibles">
                 <h3>AROMÁTICAS Y<br>COMESTIBLES</h3>
             </a>
 
-            <a class="card" href="productos.html">
+            <a class="card" href="productos.php?cat=5">
                 <img src="Assets/img/cat-macetas.png" alt="Macetas y accesorios">
                 <h3>MACETAS Y<br>ACCESORIOS</h3>
             </a>
 
-            <a class="card" href="productos.html">
+            <a class="card" href="productos.php?cat=6">
                 <img src="Assets/img/cat-cuidados.png" alt="Cuidados y bienestar">
                 <h3>CUIDADOS Y<br>BIENESTAR</h3>
             </a>

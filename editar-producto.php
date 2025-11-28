@@ -1,3 +1,27 @@
+<?php
+session_start();
+
+
+if (!isset($_GET['id'])) {
+    header("Location: mis-productos.php");
+    exit();
+}
+
+$producto_id = intval($_GET['id']);
+
+
+include "app/config/connectionController.php";
+$conn = (new ConnectionController())->connect();
+
+$query = "SELECT * FROM producto WHERE producto_id = ?";
+$stmt = $conn->prepare($query);
+$stmt->bind_param("i", $producto_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$producto = $result->fetch_assoc();
+
+
+?>
 <!DOCTYPE html>
 <html lang="es">
 
@@ -5,19 +29,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Raíz Viva – Editar producto</title>
-
-    <!-- Tu global existente -->
-    <link rel="stylesheet" href="../Assets/styles/global.css">
-    <!-- CSS específico de esta vista -->
-    <link rel="stylesheet" href="../Assets/styles/product-edit.css">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="Assets/styles/global.css">
+    <link rel="stylesheet" href="Assets/styles/product-new.css">
 </head>
 
 <body>
-    <!-- (Tu topbar global va arriba) -->
     <header class="topbar">
         <div class="topbar__inner">
-            <a class="brand" href="/">
-                <img src="../Assets/img/logo.png" alt="Raíz Viva">
+            <a class="brand" href="index.php">
+                <img src="Assets/img/logo.png" alt="Raíz Viva">
             </a>
 
             <div class="nav-dropdown">
@@ -49,12 +70,12 @@
             </form>
 
             <div class="actions">
-                <a href="/login" class="action">
+                <a href="mi-cuenta.php" class="action">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
                         <path d="M20 21a8 8 0 1 0-16 0" />
                         <circle cx="12" cy="7" r="4" />
                     </svg>
-                    <span>Ingresar</span>
+                    <span>Mi cuenta</span>
                 </a>
                 <a href="/carrito" class="action">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
@@ -71,9 +92,9 @@
     <main class="page">
         <!-- Breadcrumbs -->
         <nav class="breadcrumb" aria-label="ruta">
-            <a href="mi-cuenta.html">Mi Cuenta</a>
+            <a href="mi-cuenta.php">Mi Cuenta</a>
             <span class="sep">›</span>
-            <a href="mis-productos.html">Mis Productos</a>
+            <a href="mis-productos.php">Mis Productos</a>
             <span class="sep">›</span>
             <span>Editar Producto</span>
         </nav>
@@ -81,73 +102,63 @@
         <section class="prod-form-card" aria-labelledby="pf-title">
             <h1 id="pf-title" class="pf-title">Editar producto</h1>
 
-            <form class="pf" action="#" method="post" enctype="multipart/form-data">
-                <!-- FOTOS -->
+            <form class="pf" action="app/controllers/productController.php" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="update_product">    
+
+                <input type="hidden" name="producto_id" value="<?php echo $producto['producto_id']; ?>">
+                
+                
                 <fieldset class="pf-photos">
                     <legend>Máximo 3 fotos</legend>
 
-                    <!-- Principal -->
+                    <!-- FOTO PRINCIPAL -->
                     <div class="pf-photo">
                         <span class="pf-photo__label">Principal</span>
-                        <div class="pf-photo__frame">
-                            <img src="../Assets/img/monstera_1.jpg" alt="Foto principal del producto">
+                        <div class="pf-photo__frame" <?php if (!empty($producto['imagen'])): ?>style="background-image: url('<?php echo htmlspecialchars($producto['imagen']); ?>'); background-size: cover; background-position: center;"<?php endif; ?>>
+                            <input id="photo_main" name="photo_main" type="file" accept="image/*" class="pf-photo__input">
+                            <label for="photo_main" class="pf-photo__drop" <?php if (!empty($producto['imagen'])): ?>style="display: none;"<?php endif; ?>>Subir / Reemplazar</label>
                         </div>
-
-                        <label class="pf-photo__drop">
-                            <input class="pf-photo__input" type="file" name="photo_main" accept="image/*">
-                            Subir / Reemplazar
-                        </label>
-
-                        <button type="button" class="btn-danger pf-photo__remove">Eliminar</button>
+                        <button type="button" class="btn-danger pf-photo__remove" <?php echo empty($producto['imagen']) ? 'disabled' : ''; ?>>Eliminar</button>
                     </div>
 
-                    <!-- Extra 1 -->
+                    <!-- FOTO EXTRA 1 -->
                     <div class="pf-photo">
                         <span class="pf-photo__label">Extra 1</span>
                         <div class="pf-photo__frame">
-                            <img src="../Assets/img/monstera_2.jpg" alt="Foto extra 1">
+                            <input id="photo_extra1" name="photo_extra1" type="file" accept="image/*" class="pf-photo__input">
+                            <label for="photo_extra1" class="pf-photo__drop">Subir / Reemplazar</label>
                         </div>
-
-                        <label class="pf-photo__drop">
-                            <input class="pf-photo__input" type="file" name="photo_extra_1" accept="image/*">
-                            Subir / Reemplazar
-                        </label>
-
-                        <button type="button" class="btn-danger pf-photo__remove">Eliminar</button>
+                        <button type="button" class="btn-danger pf-photo__remove" disabled>Eliminar</button>
                     </div>
 
-                    <!-- Extra 2 -->
+                    <!-- FOTO EXTRA 2 -->
                     <div class="pf-photo">
                         <span class="pf-photo__label">Extra 2</span>
                         <div class="pf-photo__frame">
-                            <img src="../Assets/img/monstera_3.jpg" alt="Foto extra 2">
+                            <input id="photo_extra2" name="photo_extra2" type="file" accept="image/*" class="pf-photo__input">
+                            <label for="photo_extra2" class="pf-photo__drop">Subir / Reemplazar</label>
                         </div>
-
-                        <label class="pf-photo__drop">
-                            <input class="pf-photo__input" type="file" name="photo_extra_2" accept="image/*">
-                            Subir / Reemplazar
-                        </label>
-
-                        <button type="button" class="btn-danger pf-photo__remove">Eliminar</button>
+                        <button type="button" class="btn-danger pf-photo__remove" disabled>Eliminar</button>
                     </div>
                 </fieldset>
 
                 <!-- CAMPOS -->
-                <div class="pf-fields">
+                <fieldset class="pf-fields">
                     <div class="pf-field">
                         <label for="name">Nombre</label>
-                        <input id="name" name="name" type="text" value="Monstera Deliciosa" required>
+                        <input id="name" name="name" type="text" value="<?php echo htmlspecialchars($producto['nombre']); ?>" required placeholder="Ej. Monstera Deliciosa">
                     </div>
 
                     <div class="pf-field">
                         <label for="category">Categoría</label>
                         <select id="category" name="category" required>
-                            <option selected>Planta de Interior</option>
-                            <option>Planta de Exterior</option>
-                            <option>Aromáticas y Comestibles</option>
-                            <option>Macetas y Accesorios</option>
-                            <option>Cuidados y Bienestar</option>
-                            <option>Bajo Mantenimiento</option>
+                            <option value="" hidden>Selecciona una categoría</option>
+                            <option value="1" <?php echo $producto['categoria_categoria_id'] == 1 ? 'selected' : ''; ?>>Plantas de interior</option>
+                            <option value="2" <?php echo $producto['categoria_categoria_id'] == 2 ? 'selected' : ''; ?>>Plantas de exterior</option>
+                            <option value="3" <?php echo $producto['categoria_categoria_id'] == 3 ? 'selected' : ''; ?>>Bajo mantenimiento</option>
+                            <option value="4" <?php echo $producto['categoria_categoria_id'] == 4 ? 'selected' : ''; ?>>Aromáticas y comestibles</option>
+                            <option value="5" <?php echo $producto['categoria_categoria_id'] == 5 ? 'selected' : ''; ?>>Macetas y accesorios</option>
+                            <option value="6" <?php echo $producto['categoria_categoria_id'] == 6 ? 'selected' : ''; ?>>Cuidados y bienestar</option>
                         </select>
                     </div>
 
@@ -155,40 +166,36 @@
                         <label for="price">Precio</label>
                         <div class="pf-money">
                             <span>$</span>
-                            <input id="price" name="price" type="number" step="0.01" min="0" value="250.00" required>
+                            <input id="price" name="price" type="number" step="0.01" min="0" value="<?php echo $producto['precio']; ?>" required placeholder="0.00">
                         </div>
-                        <small class="pf-hint">Precio incluye IVA.</small>
-                    </div>
-
-                    <div class="pf-field pf-desc">
-                        <label for="desc">Descripción</label>
-                        <textarea id="desc" name="desc"
-                            rows="8">Déjate inspirar por las hojas verdes de la naturaleza con esta MONSTERA. Se trata de una planta epífita que se sube a otras plantas para acercarse al sol. Una maravillosa compañera de cuarto que hace que tu hogar sea más vibrante.</textarea>
+                        <small class="pf-hint">Precio incluye IVA</small>
                     </div>
 
                     <div class="pf-field pf-stock">
                         <label for="stock">Stock</label>
-                        <div class="pf-stock-inline">
-                            <span>Stock:</span>
-                            <input id="stock" name="stock" type="number" min="0" value="45" required>
-                            <span>Disponibles</span>
-                        </div>
+                        <input id="stock" name="stock" type="number" min="0" step="1" value="<?php echo $producto['stock']; ?>" required>
+                        <small class="pf-hint">Disponibles</small>
                     </div>
-                </div>
+
+                    <div class="pf-field pf-desc">
+                        <label for="description">Descripción</label>
+                        <textarea id="description" name="description" rows="6" placeholder="Describe el producto…"><?php echo htmlspecialchars($producto['descripcion']); ?></textarea>
+                    </div>
+                </fieldset>
 
                 <!-- ACCIONES -->
                 <div class="pf-actions">
-                    <a class="btn-outline" href="./mis-productos.html">Cancelar</a>
+                    <a class="btn-outline" href="mis-productos.php">Cancelar</a>
                     <button class="btn-primary" type="submit">Guardar cambios</button>
                 </div>
             </form>
         </section>
     </main>
 
-    <!-- (Tu footer global va abajo) -->
     <footer class="footer">
         <p>© Raíz Viva</p>
     </footer>
+    <script src="Assets/js/validaciones.js"></script>
 </body>
 
 </html>
