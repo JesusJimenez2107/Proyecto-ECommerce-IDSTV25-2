@@ -180,3 +180,22 @@ button[type="submit"]:active {
 input.input-error:focus {
     box-shadow: 0 0 0 3px rgba(255, 0, 0, .3) !important;
 }
+
+.alert {
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.alert-error {
+    background-color: #ffe5e5;
+    border: 1px solid #ff4d4d;
+    color: #b30000;
+}
+
+.alert-success {
+    background-color: #e5ffe9;
+    border: 1px solid #37b24d;
+    color: #186429;
+}

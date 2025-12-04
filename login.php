@@ -18,6 +18,30 @@
 
             <h2>Inicio de sesión</h2>
 
+            <!-- ALERTAS -->
+            <?php if (isset($_GET['error'])): ?>
+                <?php if ($_GET['error'] == 'user'): ?>
+                    <div class="alert alert-error">
+                        El correo ingresado no está registrado.
+                    </div>
+                <?php elseif ($_GET['error'] == 'password'): ?>
+                    <div class="alert alert-error">
+                        La contraseña es incorrecta.
+                    </div>
+                <?php elseif ($_GET['error'] == 'db'): ?>
+                    <div class="alert alert-error">
+                        Ocurrió un problema con la base de datos. Inténtalo más tarde.
+                    </div>
+                <?php endif; ?>
+            <?php endif; ?>
+
+            <?php if (isset($_GET['success']) && $_GET['success'] == 'registered'): ?>
+                <div class="alert alert-success">
+                    ¡Registro exitoso! Ahora puedes iniciar sesión.
+                </div>
+            <?php endif; ?>
+            <!-- FIN ALERTAS -->
+
             <form action="./app/controllers/authController.php" method="POST" onsubmit="return validateLogin()">
 
                 <label for="email">Correo</label>
@@ -26,7 +50,7 @@
                 <label for="password">Contraseña</label>
                 <input type="password" id="password" name="password" placeholder="Contraseña" required>
 
-                <p>¿No tienes cuenta? <a href="registro.html">Regístrate</a></p>
+                <p>¿No tienes cuenta? <a href="registro.php">Regístrate</a></p>
 
                 <button type="submit">INICIAR SESIÓN</button>
 
@@ -43,6 +67,6 @@
 
     </main>
 
-     <script src="./Assets/js/validaciones.js"></script>
+    <script src="./Assets/js/validaciones.js"></script>
 </body>
 </html>

@@ -80,7 +80,7 @@ $logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
                         <span>Mi cuenta</span>
                     </a>
                 <?php else: ?>
-                    <a href="login.html" class="action">
+                    <a href="login.php" class="action">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
                             <path d="M20 21a8 8 0 1 0-16 0" />
                             <circle cx="12" cy="7" r="4" />

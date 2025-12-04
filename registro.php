@@ -12,15 +12,26 @@
         <!-- SECCIÓN IZQUIERDA (FORMULARIO) -->
         <section class="form-section">
 
-            <!-- LOGO -->
             <div class="brand">
                 <img src="Assets/img/logo.png" alt="Logo Raíz Viva">
             </div>
 
-            <!-- TÍTULO -->
             <h2>REGISTRO</h2>
 
-            <!-- FORMULARIO -->
+            <!-- ALERTAS -->
+            <?php if (isset($_GET['error'])): ?>
+                <?php if ($_GET['error'] == 'email'): ?>
+                    <div class="alert alert-error">
+                        Este correo ya está registrado.
+                    </div>
+                <?php elseif ($_GET['error'] == 'db'): ?>
+                    <div class="alert alert-error">
+                        Ocurrió un error al registrar tu cuenta. Inténtalo más tarde.
+                    </div>
+                <?php endif; ?>
+            <?php endif; ?>
+            <!-- FIN ALERTAS -->
+
             <form action="app/controllers/usersController.php" method="POST" onsubmit="return validateRegister()">
 
                 <label for="nombre">Nombre(s)</label>
@@ -41,7 +52,7 @@
                 <label for="telefono">Teléfono</label>
                 <input type="text" id="telefono" name="telefono" placeholder="Teléfono" required>
 
-                <p>¿Ya tienes cuenta? <a href="login.html">Inicia sesión</a></p>
+                <p>¿Ya tienes cuenta? <a href="login.php">Inicia sesión</a></p>
 
                 <button type="submit">REGISTRARSE</button>
 
@@ -56,6 +67,6 @@
             <img src="Assets/img/img-logo.png" alt="Plantas decorativas">
         </section>
 
-         <script src="./Assets/js/validaciones.js"></script>
+        <script src="./Assets/js/validaciones.js"></script>
 </body>
 </html>

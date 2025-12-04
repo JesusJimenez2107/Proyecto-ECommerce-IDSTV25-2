@@ -1,41 +1,42 @@
 <?php
+session_start();
 
-
-include "../models/userModel.php"; 
+include "../models/userModel.php";
 
 if (isset($_POST['action']) && $_POST['action'] == "create_user") {
 
- 	$name = $_POST['nombre'];
- 	$lastname = $_POST['apellidos'];
- 	$email = $_POST['correo'];
-	$password = $_POST['password'];	
-    $direccion = $_POST['direccion'];
-    $telefono = $_POST['telefono'];
+    $name      = trim($_POST['nombre']);
+    $lastname  = trim($_POST['apellidos']);
+    $email     = trim($_POST['correo']);
+    $password  = trim($_POST['password']);
+    $direccion = trim($_POST['direccion']);
+    $telefono  = trim($_POST['telefono']);
 
-	$user = new UsersController();
-	$user->create($name, $lastname, $email, $password, $direccion, $telefono);
-} 
+    $userModel = new UserModel();
 
-class UsersController{
+    // VERIFICAR SI YA EXISTE EL CORREO
+    $conn = (new ConnectionController())->connect();
+    $query = "SELECT usuario_id FROM usuario WHERE email = ?";
+    $prepared_query = $conn->prepare($query);
+    $prepared_query->bind_param('s', $email);
+    $prepared_query->execute();
+    $result = $prepared_query->get_result();
 
-	private $User;
+    if ($result->num_rows > 0) {
+        // Correo ya registrado
+        header("Location: ../../registro.php?error=email");
+        exit;
+    }
 
-	public function __construct() {
-	 	$this->User = new UserModel();
-	}
+    // Crear usuario
+    $created = $userModel->create($name, $lastname, $email, $password, $direccion, $telefono);
 
-	public function create($name, $lastname, $email, $password, $direccion, $telefono)
-	{ 	
-		
-		if ($this->User->create($name, $lastname, $email, $password, $direccion, $telefono)) {
-			
-			header('Location: ../../login.html?status=ok'); 
-
-		}else
-			
-			header('Location: ../../registro.html?status=error'); 
-
-	}
-
+    if ($created) {
+        header("Location: ../../login.php?success=registered");
+        exit;
+    } else {
+        header("Location: ../../registro.php?error=db");
+        exit;
+    }
 }
 ?>
