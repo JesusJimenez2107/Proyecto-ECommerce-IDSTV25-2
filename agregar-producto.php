@@ -1,10 +1,15 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Validar sesión
-if (!isset($_SESSION['usuario_id'])) {
-    header("Location: login.html");
-    exit();
+$logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
+$cartCount = 0;
+
+if (isset($_SESSION['usuario_id'])) {
+    require_once "app/controllers/cartController.php";
+    $cartCtrl = new CartController();
+    $cartCount = $cartCtrl->getCartCount((int) $_SESSION['usuario_id']);
 }
 ?>
 <!DOCTYPE html>
@@ -62,13 +67,13 @@ if (!isset($_SESSION['usuario_id'])) {
                     </svg>
                     <span>Mi cuenta</span>
                 </a>
-                <a href="/carrito" class="action">
+                <a href="carrito.php" class="action">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
                         <circle cx="10" cy="20" r="1" />
                         <circle cx="18" cy="20" r="1" />
                         <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6" />
                     </svg>
-                    <span>0</span>
+                    <span><?php echo $cartCount; ?></span>
                 </a>
             </div>
         </div>

@@ -1,5 +1,17 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
+$cartCount = 0;
+
+if (isset($_SESSION['usuario_id'])) {
+    require_once "app/controllers/cartController.php";
+    $cartCtrl = new CartController();
+    $cartCount = $cartCtrl->getCartCount((int) $_SESSION['usuario_id']);
+}
+
 include "app/config/connectionController.php";
 
 $conn = (new ConnectionController())->connect();
@@ -8,7 +20,7 @@ $conn = (new ConnectionController())->connect();
 $categoria_id = isset($_GET['cat']) ? intval($_GET['cat']) : null;
 
 
-if ($categoria_id) { 
+if ($categoria_id) {
     $query = "SELECT producto.*
               FROM producto
               WHERE producto.estado = 'activo' AND producto.categoria_categoria_id = ?
@@ -104,13 +116,13 @@ $logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
                         <span>Ingresar</span>
                     </a>
                 <?php endif; ?>
-                <a href="#" class="action">
+                <a href="carrito.php" class="action">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                        <circle cx="10" cy="20" r="1"></circle>
-                        <circle cx="18" cy="20" r="1"></circle>
-                        <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6"></path>
+                        <circle cx="10" cy="20" r="1" />
+                        <circle cx="18" cy="20" r="1" />
+                        <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6" />
                     </svg>
-                    <span>0</span>
+                    <span><?php echo $cartCount; ?></span>
                 </a>
             </div>
         </div>
@@ -133,8 +145,8 @@ $logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
                     <article class="product-card">
                         <a class="product-thumb" href="producto.php?id=<?php echo $producto['producto_id']; ?>">
                             <?php if ($producto['imagen']): ?>
-                                <img src="<?php echo htmlspecialchars($producto['imagen']); ?>" 
-                                     alt="<?php echo htmlspecialchars($producto['nombre']); ?>" />
+                                <img src="<?php echo htmlspecialchars($producto['imagen']); ?>"
+                                    alt="<?php echo htmlspecialchars($producto['nombre']); ?>" />
                             <?php else: ?>
                                 <img src="Assets/img/placeholder.jpg" alt="Sin imagen" />
                             <?php endif; ?>

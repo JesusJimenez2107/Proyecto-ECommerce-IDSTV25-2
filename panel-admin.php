@@ -1,5 +1,20 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
+
+$logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
+$cartCount = 0;
+
+if (isset($_SESSION['usuario_id'])) {
+  require_once "app/controllers/cartController.php";
+  $cartCtrl = new CartController();
+  $cartCount = $cartCtrl->getCartCount((int) $_SESSION['usuario_id']);
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,6 +23,7 @@
   <link rel="stylesheet" href="Assets/styles/global.css" />
   <link rel="stylesheet" href="Assets/styles/account.css" />
 </head>
+
 <body>
   <!-- Header global -->
   <header class="topbar">
@@ -34,7 +50,8 @@
         <input type="search" placeholder="Buscar" aria-label="Buscar productos" />
         <button type="submit" aria-label="Buscar">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#586a58" stroke-width="2">
-            <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
           </svg>
         </button>
       </form>
@@ -42,16 +59,19 @@
       <div class="actions">
         <a href="#" class="action">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-            <path d="M20 21a8 8 0 1 0-16 0" /><circle cx="12" cy="7" r="4" />
+            <path d="M20 21a8 8 0 1 0-16 0" />
+            <circle cx="12" cy="7" r="4" />
           </svg>
           <span>Mi cuenta</span>
         </a>
-        <a href="/carrito" class="action">
+        <a href="carrito.php" class="action">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-            <circle cx="10" cy="20" r="1" /><circle cx="18" cy="20" r="1" />
+            <circle cx="10" cy="20" r="1" />
+            <circle cx="18" cy="20" r="1" />
             <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6" />
           </svg>
-          <span>0</span>
+          <span><?php echo $cartCount; ?></span>
+        </a>
         </a>
       </div>
     </div>
@@ -98,4 +118,5 @@
     <p>© Raíz Viva</p>
   </footer>
 </body>
+
 </html>

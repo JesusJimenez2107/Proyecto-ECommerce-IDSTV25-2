@@ -1,12 +1,16 @@
-
 <?php
-session_start();
-
-if (!isset($_SESSION['usuario_id'])) {
-    header("Location: login.html");
-    exit();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 
+$logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
+$cartCount = 0;
+
+if (isset($_SESSION['usuario_id'])) {
+    require_once "app/controllers/cartController.php";
+    $cartCtrl = new CartController();
+    $cartCount = $cartCtrl->getCartCount((int) $_SESSION['usuario_id']);
+}
 include "app/config/connectionController.php";
 
 $conn = (new ConnectionController())->connect();
@@ -71,13 +75,13 @@ $result = $stmt->get_result();
                     </svg>
                     <span>Ingresar</span>
                 </a>
-                <a href="/carrito" class="action">
+                <a href="carrito.php" class="action">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
                         <circle cx="10" cy="20" r="1" />
                         <circle cx="18" cy="20" r="1" />
                         <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6" />
                     </svg>
-                    <span>0</span>
+                    <span><?php echo $cartCount; ?></span>
                 </a>
             </div>
         </div>
@@ -95,41 +99,42 @@ $result = $stmt->get_result();
 
         <!-- GRID -->
         <section class="seller-grid" aria-label="Listado de productos">
-        <?php while ($row = $result->fetch_assoc()): ?>
-            <article class="seller-card">
+            <?php while ($row = $result->fetch_assoc()): ?>
+                <article class="seller-card">
 
-                <a class="thumb" href="editar-producto.php?id=<?php echo $row['producto_id']; ?>">
-                    <img src="<?php echo $row['imagen']; ?>" alt="<?php echo $row['nombre']; ?>">
-                </a>
+                    <a class="thumb" href="editar-producto.php?id=<?php echo $row['producto_id']; ?>">
+                        <img src="<?php echo $row['imagen']; ?>" alt="<?php echo $row['nombre']; ?>">
+                    </a>
 
-                <h3 class="item-title"><?php echo $row['nombre']; ?></h3>
+                    <h3 class="item-title"><?php echo $row['nombre']; ?></h3>
 
-                <div class="item-meta">
-                    <span class="price">$<?php echo number_format($row['precio'], 2); ?></span>
+                    <div class="item-meta">
+                        <span class="price">$<?php echo number_format($row['precio'], 2); ?></span>
 
-                    <?php if ($row['stock'] <= 3): ?>
-                        <span class="stock stock-low">Stock: <strong><?php echo $row['stock']; ?></strong> disponibles</span>
-                    <?php else: ?>
-                        <span class="stock">Stock: <strong><?php echo $row['stock']; ?></strong> disponibles</span>
-                    <?php endif; ?>
-                </div>
+                        <?php if ($row['stock'] <= 3): ?>
+                            <span class="stock stock-low">Stock: <strong><?php echo $row['stock']; ?></strong>
+                                disponibles</span>
+                        <?php else: ?>
+                            <span class="stock">Stock: <strong><?php echo $row['stock']; ?></strong> disponibles</span>
+                        <?php endif; ?>
+                    </div>
 
-                <div class="item-actions">
+                    <div class="item-actions">
 
                         <!-- ELIMINAR -->
-                    <form action="app/controllers/productController.php" method="post" class="inline">
-                        <input type="hidden" name="action" value="delete_product">
+                        <form action="app/controllers/productController.php" method="post" class="inline">
+                            <input type="hidden" name="action" value="delete_product">
 
-                        <input type="hidden" name="producto_id" value="<?php echo $row['producto_id']; ?>">
-                        <button type="submit" class="btn-danger">Eliminar</button>
-                    </form>
+                            <input type="hidden" name="producto_id" value="<?php echo $row['producto_id']; ?>">
+                            <button type="submit" class="btn-danger">Eliminar</button>
+                        </form>
 
                         <!-- EDITAR -->
-                    <a href="editar-producto.php?id=<?php echo $row['producto_id']; ?>" class="btn-outline">Editar</a>
-                </div>
+                        <a href="editar-producto.php?id=<?php echo $row['producto_id']; ?>" class="btn-outline">Editar</a>
+                    </div>
 
-            </article>
-        <?php endwhile; ?>
+                </article>
+            <?php endwhile; ?>
         </section>
 
 

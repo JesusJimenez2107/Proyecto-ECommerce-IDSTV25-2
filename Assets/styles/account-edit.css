@@ -79,6 +79,82 @@
     filter: brightness(.95);
 }
 
+/* ===== MODAL ===== */
+
+body.modal-open main,
+body.modal-open header,
+body.modal-open footer {
+    filter: blur(4px);
+    pointer-events: none;
+    user-select: none;
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(5px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.modal-overlay.is-visible {
+    display: flex;
+}
+
+.modal-box {
+    background: #fff;
+    padding: 24px;
+    border-radius: 16px;
+    max-width: 350px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.3);
+}
+
+.modal-box h2 {
+    margin-bottom: 8px;
+    font-size: 1.3rem;
+    color: #2e7d32;
+}
+
+.modal-box p {
+    color: #444;
+    font-size: 0.95rem;
+    margin-bottom: 20px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.modal-btn-cancel {
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid #c9c9c9;
+    background: #fff;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.modal-btn-confirm {
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: none;
+    background: #4caf50;
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.modal-btn-confirm:hover {
+    background: #3d8d40;
+}
+
 /* Responsive */
 @media (max-width:560px) {
     .profile-card {

@@ -1,10 +1,15 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
+$logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
+$cartCount = 0;
 
-if (!isset($_GET['id'])) {
-    header("Location: mis-productos.php");
-    exit();
+if (isset($_SESSION['usuario_id'])) {
+    require_once "app/controllers/cartController.php";
+    $cartCtrl = new CartController();
+    $cartCount = $cartCtrl->getCartCount((int) $_SESSION['usuario_id']);
 }
 
 $producto_id = intval($_GET['id']);
@@ -77,13 +82,13 @@ $producto = $result->fetch_assoc();
                     </svg>
                     <span>Mi cuenta</span>
                 </a>
-                <a href="/carrito" class="action">
+                <a href="carrito.php" class="action">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
                         <circle cx="10" cy="20" r="1" />
                         <circle cx="18" cy="20" r="1" />
                         <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6" />
                     </svg>
-                    <span>0</span>
+                    <span><?php echo $cartCount; ?></span>
                 </a>
             </div>
         </div>
@@ -103,20 +108,22 @@ $producto = $result->fetch_assoc();
             <h1 id="pf-title" class="pf-title">Editar producto</h1>
 
             <form class="pf" action="app/controllers/productController.php" method="post" enctype="multipart/form-data">
-                <input type="hidden" name="action" value="update_product">    
+                <input type="hidden" name="action" value="update_product">
 
                 <input type="hidden" name="producto_id" value="<?php echo $producto['producto_id']; ?>">
-                
-                
+
+
                 <fieldset class="pf-photos">
                     <legend>Máximo 3 fotos</legend>
 
                     <!-- FOTO PRINCIPAL -->
                     <div class="pf-photo">
                         <span class="pf-photo__label">Principal</span>
-                        <div class="pf-photo__frame" <?php if (!empty($producto['imagen'])): ?>style="background-image: url('<?php echo htmlspecialchars($producto['imagen']); ?>'); background-size: cover; background-position: center;"<?php endif; ?>>
-                            <input id="photo_main" name="photo_main" type="file" accept="image/*" class="pf-photo__input">
-                            <label for="photo_main" class="pf-photo__drop" <?php if (!empty($producto['imagen'])): ?>style="display: none;"<?php endif; ?>>Subir / Reemplazar</label>
+                        <div class="pf-photo__frame" <?php if (!empty($producto['imagen'])): ?>style="background-image: url('<?php echo htmlspecialchars($producto['imagen']); ?>'); background-size: cover; background-position: center;"
+                            <?php endif; ?>>
+                            <input id="photo_main" name="photo_main" type="file" accept="image/*"
+                                class="pf-photo__input">
+                            <label for="photo_main" class="pf-photo__drop" <?php if (!empty($producto['imagen'])): ?>style="display: none;" <?php endif; ?>>Subir / Reemplazar</label>
                         </div>
                         <button type="button" class="btn-danger pf-photo__remove" <?php echo empty($producto['imagen']) ? 'disabled' : ''; ?>>Eliminar</button>
                     </div>
@@ -125,7 +132,8 @@ $producto = $result->fetch_assoc();
                     <div class="pf-photo">
                         <span class="pf-photo__label">Extra 1</span>
                         <div class="pf-photo__frame">
-                            <input id="photo_extra1" name="photo_extra1" type="file" accept="image/*" class="pf-photo__input">
+                            <input id="photo_extra1" name="photo_extra1" type="file" accept="image/*"
+                                class="pf-photo__input">
                             <label for="photo_extra1" class="pf-photo__drop">Subir / Reemplazar</label>
                         </div>
                         <button type="button" class="btn-danger pf-photo__remove" disabled>Eliminar</button>
@@ -135,7 +143,8 @@ $producto = $result->fetch_assoc();
                     <div class="pf-photo">
                         <span class="pf-photo__label">Extra 2</span>
                         <div class="pf-photo__frame">
-                            <input id="photo_extra2" name="photo_extra2" type="file" accept="image/*" class="pf-photo__input">
+                            <input id="photo_extra2" name="photo_extra2" type="file" accept="image/*"
+                                class="pf-photo__input">
                             <label for="photo_extra2" class="pf-photo__drop">Subir / Reemplazar</label>
                         </div>
                         <button type="button" class="btn-danger pf-photo__remove" disabled>Eliminar</button>
@@ -146,19 +155,27 @@ $producto = $result->fetch_assoc();
                 <fieldset class="pf-fields">
                     <div class="pf-field">
                         <label for="name">Nombre</label>
-                        <input id="name" name="name" type="text" value="<?php echo htmlspecialchars($producto['nombre']); ?>" required placeholder="Ej. Monstera Deliciosa">
+                        <input id="name" name="name" type="text"
+                            value="<?php echo htmlspecialchars($producto['nombre']); ?>" required
+                            placeholder="Ej. Monstera Deliciosa">
                     </div>
 
                     <div class="pf-field">
                         <label for="category">Categoría</label>
                         <select id="category" name="category" required>
                             <option value="" hidden>Selecciona una categoría</option>
-                            <option value="1" <?php echo $producto['categoria_categoria_id'] == 1 ? 'selected' : ''; ?>>Plantas de interior</option>
-                            <option value="2" <?php echo $producto['categoria_categoria_id'] == 2 ? 'selected' : ''; ?>>Plantas de exterior</option>
-                            <option value="3" <?php echo $producto['categoria_categoria_id'] == 3 ? 'selected' : ''; ?>>Bajo mantenimiento</option>
-                            <option value="4" <?php echo $producto['categoria_categoria_id'] == 4 ? 'selected' : ''; ?>>Aromáticas y comestibles</option>
-                            <option value="5" <?php echo $producto['categoria_categoria_id'] == 5 ? 'selected' : ''; ?>>Macetas y accesorios</option>
-                            <option value="6" <?php echo $producto['categoria_categoria_id'] == 6 ? 'selected' : ''; ?>>Cuidados y bienestar</option>
+                            <option value="1" <?php echo $producto['categoria_categoria_id'] == 1 ? 'selected' : ''; ?>>
+                                Plantas de interior</option>
+                            <option value="2" <?php echo $producto['categoria_categoria_id'] == 2 ? 'selected' : ''; ?>>
+                                Plantas de exterior</option>
+                            <option value="3" <?php echo $producto['categoria_categoria_id'] == 3 ? 'selected' : ''; ?>>
+                                Bajo mantenimiento</option>
+                            <option value="4" <?php echo $producto['categoria_categoria_id'] == 4 ? 'selected' : ''; ?>>
+                                Aromáticas y comestibles</option>
+                            <option value="5" <?php echo $producto['categoria_categoria_id'] == 5 ? 'selected' : ''; ?>>
+                                Macetas y accesorios</option>
+                            <option value="6" <?php echo $producto['categoria_categoria_id'] == 6 ? 'selected' : ''; ?>>
+                                Cuidados y bienestar</option>
                         </select>
                     </div>
 
@@ -166,20 +183,23 @@ $producto = $result->fetch_assoc();
                         <label for="price">Precio</label>
                         <div class="pf-money">
                             <span>$</span>
-                            <input id="price" name="price" type="number" step="0.01" min="0" value="<?php echo $producto['precio']; ?>" required placeholder="0.00">
+                            <input id="price" name="price" type="number" step="0.01" min="0"
+                                value="<?php echo $producto['precio']; ?>" required placeholder="0.00">
                         </div>
                         <small class="pf-hint">Precio incluye IVA</small>
                     </div>
 
                     <div class="pf-field pf-stock">
                         <label for="stock">Stock</label>
-                        <input id="stock" name="stock" type="number" min="0" step="1" value="<?php echo $producto['stock']; ?>" required>
+                        <input id="stock" name="stock" type="number" min="0" step="1"
+                            value="<?php echo $producto['stock']; ?>" required>
                         <small class="pf-hint">Disponibles</small>
                     </div>
 
                     <div class="pf-field pf-desc">
                         <label for="description">Descripción</label>
-                        <textarea id="description" name="description" rows="6" placeholder="Describe el producto…"><?php echo htmlspecialchars($producto['descripcion']); ?></textarea>
+                        <textarea id="description" name="description" rows="6"
+                            placeholder="Describe el producto…"><?php echo htmlspecialchars($producto['descripcion']); ?></textarea>
                     </div>
                 </fieldset>
 
