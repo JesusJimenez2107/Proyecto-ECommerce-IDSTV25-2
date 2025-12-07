@@ -13,6 +13,7 @@ require_once "app/config/connectionController.php";
 
 $usuario_id = (int) $_SESSION['usuario_id'];
 $compra_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+$isAdmin = isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin';
 
 if ($compra_id <= 0) {
     echo "ID de compra inválido.";
@@ -23,20 +24,49 @@ $conn = (new ConnectionController())->connect();
 
 /* ============================
  * 1) OBTENER DATOS DE LA COMPRA
+ *    - Cliente: solo sus compras
+ *    - Admin: cualquier compra
  * ============================ */
-$sqlCompra = "SELECT compra_id, fecha, total,
-                     nombre_envio, direccion_envio,
-                     ciudad_envio, telefono_envio
-              FROM compra
-              WHERE compra_id = ? AND usuario_usuario_id = ?";
-$stmt = $conn->prepare($sqlCompra);
-$stmt->bind_param("ii", $compra_id, $usuario_id);
+if ($isAdmin) {
+    // Admin puede ver cualquier compra
+    $sqlCompra = "SELECT c.compra_id, c.fecha, c.total,
+                         c.nombre_envio, c.direccion_envio,
+                         c.ciudad_envio, c.telefono_envio,
+                         u.nombre AS nombre_usuario,
+                         u.apellidos AS apellidos_usuario,
+                         u.email AS email_usuario
+                  FROM compra c
+                  INNER JOIN usuario u
+                      ON c.usuario_usuario_id = u.usuario_id
+                  WHERE c.compra_id = ?";
+    $stmt = $conn->prepare($sqlCompra);
+    $stmt->bind_param("i", $compra_id);
+
+} else {
+    // Cliente: solo si la compra es suya
+    $sqlCompra = "SELECT c.compra_id, c.fecha, c.total,
+                         c.nombre_envio, c.direccion_envio,
+                         c.ciudad_envio, c.telefono_envio,
+                         u.nombre AS nombre_usuario,
+                         u.apellidos AS apellidos_usuario,
+                         u.email AS email_usuario
+                  FROM compra c
+                  INNER JOIN usuario u
+                      ON c.usuario_usuario_id = u.usuario_id
+                  WHERE c.compra_id = ? AND c.usuario_usuario_id = ?";
+    $stmt = $conn->prepare($sqlCompra);
+    $stmt->bind_param("ii", $compra_id, $usuario_id);
+}
+
 $stmt->execute();
 $res = $stmt->get_result();
 $compra = $res->fetch_assoc();
+$stmt->close();
 
 if (!$compra) {
-    echo "No se encontró la compra o no pertenece a tu cuenta.";
+    echo $isAdmin
+        ? "No se encontró la compra."
+        : "No se encontró la compra o no pertenece a tu cuenta.";
     exit;
 }
 
@@ -59,6 +89,7 @@ $stmtItems->bind_param("i", $compra_id);
 $stmtItems->execute();
 $resItems = $stmtItems->get_result();
 $items = $resItems->fetch_all(MYSQLI_ASSOC);
+$stmtItems->close();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -187,10 +218,23 @@ $items = $resItems->fetch_all(MYSQLI_ASSOC);
 
     <div class="ticket">
         <div class="ticket-header">
-            <!-- Si quieres, aquí puedes usar <img src="Assets/img/logo.png" ...> -->
+            <!-- Puedes usar también:
+                 <img src="Assets/img/logo.png" alt="Raíz Viva" height="40">
+            -->
             <h1>Raíz Viva</h1>
             <small>Ticket de compra #<?php echo $compra['compra_id']; ?></small><br>
             <small>Fecha: <?php echo $fechaCompra; ?></small>
+        </div>
+
+        <!-- Datos del usuario (útil para admin) -->
+        <div class="ticket-info">
+            <h2>Datos del cliente</h2>
+            <p><strong>Nombre:</strong>
+                <?php echo htmlspecialchars($compra['nombre_usuario'] . ' ' . $compra['apellidos_usuario']); ?>
+            </p>
+            <p><strong>Correo:</strong>
+                <?php echo htmlspecialchars($compra['email_usuario']); ?>
+            </p>
         </div>
 
         <div class="ticket-info">

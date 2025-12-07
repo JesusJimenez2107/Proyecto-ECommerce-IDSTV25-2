@@ -47,7 +47,6 @@
     height: 200px;
     object-fit: contain;
     display: block;
-    
 }
 
 .tile-title {
@@ -58,14 +57,75 @@
     font-size: 28px;
 }
 
-/* (eliminar cuenta) */
-.tile-danger {
-    background: #FFF1EE;
-    border-color: #F3C2B8;
+/* ===== MODALES DE MI CUENTA ===== */
+/* Usamos los IDs + !important para ganar a cualquier otro estilo */
+
+#confirmLogoutModal,
+#deleteAccountModal {
+    position: fixed !important;
+    /* Flota sobre toda la pantalla */
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    background: rgba(0, 0, 0, 0.45) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 1000 !important;
+    /* Por encima del resto del contenido */
 }
 
-.tile-danger .tile-title {
-    color: #BF513B;
+#confirmLogoutModal[hidden],
+#deleteAccountModal[hidden] {
+    display: none !important;
+}
+
+.modal-dialog {
+    background: #ffffff;
+    padding: 1.8rem 2rem;
+    border-radius: 1rem;
+    max-width: 360px;
+    width: 90%;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
+}
+
+.modal-title {
+    margin: 0 0 0.5rem;
+    font-size: 1.2rem;
+    color: #2e7d32;
+    /* Verde acorde a Raíz Viva */
+}
+
+.modal-text {
+    margin: 0 0 1.5rem;
+    font-size: 0.95rem;
+    color: #444;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.btn-secondary,
+.btn-danger {
+    border: none;
+    border-radius: 999px;
+    padding: 0.45rem 1.1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.btn-secondary {
+    background: #e0e0e0;
+    color: #333;
+}
+
+.btn-danger {
+    background: #c62828;
+    color: #fff;
 }
 
 /* Responsive */

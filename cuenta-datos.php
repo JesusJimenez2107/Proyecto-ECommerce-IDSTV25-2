@@ -16,8 +16,8 @@ $conn = (new ConnectionController())->connect();
 // ID del usuario logueado
 $usuario_id = (int) $_SESSION['usuario_id'];
 
-// Consultar datos del usuario
-$query = "SELECT nombre, apellidos, email, direccion, telefono 
+// Consultar datos del usuario (AHORA TAMBIÉN TRAEMOS rol)
+$query = "SELECT nombre, apellidos, email, direccion, telefono, rol 
           FROM usuario 
           WHERE usuario_id = ?";
 $stmt = $conn->prepare($query);
@@ -32,6 +32,8 @@ $apellidos = $user['apellidos'] ?? '';
 $email = $user['email'] ?? '';
 $direccion = $user['direccion'] ?? '';
 $telefono = $user['telefono'] ?? '';
+$rol = $user['rol'] ?? 'cliente';   // valor por defecto
+$isAdmin = ($rol === 'admin');
 
 // Para el header
 $logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
@@ -92,13 +94,25 @@ if ($logged) {
 
             <div class="actions">
                 <?php if ($logged): ?>
-                    <a href="mi-cuenta.php" class="action">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                            <path d="M20 21a8 8 0 1 0-16 0" />
-                            <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        <span>Mi cuenta</span>
-                    </a>
+                    <?php if ($isAdmin): ?>
+                        <!-- Si es admin, mostrar "Admin" y llevar al panel -->
+                        <a href="panel-admin.php" class="action">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+                                <path d="M20 21a8 8 0 1 0-16 0" />
+                                <circle cx="12" cy="7" r="4" />
+                            </svg>
+                            <span>Admin</span>
+                        </a>
+                    <?php else: ?>
+                        <!-- Usuario normal -->
+                        <a href="mi-cuenta.php" class="action">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+                                <path d="M20 21a8 8 0 1 0-16 0" />
+                                <circle cx="12" cy="7" r="4" />
+                            </svg>
+                            <span>Mi cuenta</span>
+                        </a>
+                    <?php endif; ?>
                 <?php else: ?>
                     <a href="login.php" class="action">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
@@ -124,7 +138,11 @@ if ($logged) {
     <main class="page">
         <!-- Breadcrumb simple -->
         <nav class="breadcrumb" aria-label="Breadcrumb">
-            <a href="mi-cuenta.php">Mi Cuenta</a> › <span>Datos Personales</span>
+            <?php if ($isAdmin): ?>
+                <a href="panel-admin.php">Admin</a> › <span>Datos personales</span>
+            <?php else: ?>
+                <a href="mi-cuenta.php">Mi cuenta</a> › <span>Datos personales</span>
+            <?php endif; ?>
         </nav>
 
         <section class="profile-card">

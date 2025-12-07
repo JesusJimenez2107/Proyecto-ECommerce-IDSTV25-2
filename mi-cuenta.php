@@ -96,26 +96,122 @@ if (isset($_SESSION['usuario_id'])) {
         <span class="tile-title">Mis compras</span>
       </a>
 
-      <a class="tile" href="logout.php">
+      <!-- Cerrar sesión -->
+      <a class="tile" href="logout.php" id="logout-link">
         <img class="tile-icon" src="Assets/icons/logout.svg" alt="" aria-hidden="true">
         <span class="tile-title">Cerrar sesión</span>
       </a>
 
-      <a class="tile tile-danger" href="">
+      <!-- Eliminar cuenta -->
+      <a class="tile tile-danger" href="eliminar_cuenta.php" id="delete-account-link">
         <img class="tile-icon" src="Assets/icons/delete-account.svg" alt="" aria-hidden="true">
         <span class="tile-title">Eliminar cuenta</span>
       </a>
 
-      <a class="tile" href="reportes.html">
+      <a class="tile" href="reportes.php">
         <img class="tile-icon" src="Assets/icons/report.svg" alt="" aria-hidden="true">
         <span class="tile-title">Reportes</span>
       </a>
     </section>
   </main>
 
+  <!-- FORM OCULTO PARA ELIMINAR CUENTA POR POST -->
+  <form id="deleteAccountForm" action="eliminar_cuenta.php" method="POST" style="display:none;">
+    <input type="hidden" name="action" value="deleteAccount">
+  </form>
+
+  <!-- MODAL CERRAR SESIÓN -->
+  <div class="modal-backdrop" id="confirmLogoutModal" hidden>
+    <div class="modal-dialog">
+      <h2 class="modal-title">¿Cerrar sesión?</h2>
+      <p class="modal-text">
+        Estás a punto de cerrar sesión en Raíz Viva. ¿Deseas continuar?
+      </p>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="cancelLogout">Cancelar</button>
+        <button type="button" class="btn-danger" id="confirmLogout">Cerrar sesión</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ELIMINAR CUENTA -->
+  <div class="modal-backdrop" id="deleteAccountModal" hidden>
+    <div class="modal-dialog">
+      <h2 class="modal-title">Eliminar cuenta</h2>
+      <p class="modal-text">
+        Esta acción eliminará tu cuenta y los datos asociados.
+        Esta operación no se puede deshacer. ¿Seguro que deseas continuar?
+      </p>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="cancelDelete">Cancelar</button>
+        <button type="button" class="btn-danger" id="confirmDelete">Eliminar cuenta</button>
+      </div>
+    </div>
+  </div>
+
   <footer class="footer">
     <p>© Raíz Viva</p>
   </footer>
+
+  <!-- SCRIPT DEL MODAL -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // ====== LOGOUT ======
+      const logoutLink = document.getElementById('logout-link');
+      const modalLogout = document.getElementById('confirmLogoutModal');
+      const btnCancel = document.getElementById('cancelLogout');
+      const btnConfirm = document.getElementById('confirmLogout');
+
+      if (logoutLink && modalLogout && btnCancel && btnConfirm) {
+        logoutLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          modalLogout.removeAttribute('hidden');
+        });
+
+        btnCancel.addEventListener('click', () => {
+          modalLogout.setAttribute('hidden', 'true');
+        });
+
+        btnConfirm.addEventListener('click', () => {
+          window.location.href = 'logout.php';
+        });
+
+        modalLogout.addEventListener('click', (e) => {
+          if (e.target === modalLogout) {
+            modalLogout.setAttribute('hidden', 'true');
+          }
+        });
+      }
+
+      // ====== ELIMINAR CUENTA ======
+      const deleteLink = document.getElementById('delete-account-link');
+      const deleteModal = document.getElementById('deleteAccountModal');
+      const btnCancelDelete = document.getElementById('cancelDelete');
+      const btnConfirmDelete = document.getElementById('confirmDelete');
+      const deleteForm = document.getElementById('deleteAccountForm');
+
+      if (deleteLink && deleteModal && btnCancelDelete && btnConfirmDelete && deleteForm) {
+        deleteLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          deleteModal.removeAttribute('hidden');
+        });
+
+        btnCancelDelete.addEventListener('click', () => {
+          deleteModal.setAttribute('hidden', 'true');
+        });
+
+        btnConfirmDelete.addEventListener('click', () => {
+          deleteForm.submit();
+        });
+
+        deleteModal.addEventListener('click', (e) => {
+          if (e.target === deleteModal) {
+            deleteModal.setAttribute('hidden', 'true');
+          }
+        });
+      }
+    });
+  </script>
 </body>
 
 </html>

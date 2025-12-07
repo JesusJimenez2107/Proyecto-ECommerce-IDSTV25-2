@@ -1,11 +1,32 @@
+<?php
+// Iniciar sesión para leer mensajes (logout / cuenta eliminada)
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$logoutSuccess = false;
+$accountDeleted = false;
+
+if (!empty($_SESSION['logout_success'])) {
+    $logoutSuccess = true;
+    unset($_SESSION['logout_success']);
+}
+
+if (!empty($_SESSION['account_deleted'])) {
+    $accountDeleted = true;
+    unset($_SESSION['account_deleted']);
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Raíz Viva – Iniciar sesión</title>
     <link rel="stylesheet" href="Assets/styles/styles.css">
 </head>
+
 <body>
     <main class="login-container">
 
@@ -18,7 +39,20 @@
 
             <h2>Inicio de sesión</h2>
 
-            <!-- ALERTAS -->
+            <!-- ALERTAS POR SESIÓN -->
+            <?php if ($accountDeleted): ?>
+                <div class="alert alert-success">
+                    Tu cuenta y los datos asociados han sido eliminados correctamente.
+                </div>
+            <?php endif; ?>
+
+            <?php if ($logoutSuccess): ?>
+                <div class="alert alert-success">
+                    Has cerrado sesión correctamente.
+                </div>
+            <?php endif; ?>
+
+            <!-- ALERTAS POR ERRORES / REGISTRO -->
             <?php if (isset($_GET['error'])): ?>
                 <?php if ($_GET['error'] == 'user'): ?>
                     <div class="alert alert-error">
@@ -69,4 +103,5 @@
 
     <script src="./Assets/js/validaciones.js"></script>
 </body>
+
 </html>

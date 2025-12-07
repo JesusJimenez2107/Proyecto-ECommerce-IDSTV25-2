@@ -173,6 +173,61 @@
     filter: brightness(0.96);
 }
 
+/* ===== Modal eliminar usuario ===== */
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+    display: none;
+    /* se oculta por defecto */
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+/* cuando el div NO tiene el atributo hidden, se muestra como overlay */
+.modal-backdrop:not([hidden]) {
+    display: flex;
+}
+
+.modal-dialog {
+    background: #ffffff;
+    padding: 1.8rem 2rem;
+    border-radius: 1rem;
+    max-width: 360px;
+    width: 90%;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+}
+
+.modal-title {
+    font-size: 1.3rem;
+    margin-bottom: .5rem;
+}
+
+.modal-text {
+    margin-bottom: 1.5rem;
+    color: #444;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: .7rem;
+}
+
+/* puedes reutilizar estos si no chocan con otros estilos */
+.btn-danger {
+    background: #c62828;
+    color: #fff;
+}
+
+.btn-secondary {
+    background: #e0e0e0;
+    color: #333;
+}
+
+
 /* Responsive */
 
 @media (max-width: 900px) {
