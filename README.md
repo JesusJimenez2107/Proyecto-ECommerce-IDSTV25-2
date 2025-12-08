@@ -30,7 +30,7 @@ El proyecto tiene como objetivo proporcionar una plataforma moderna, rápida y a
 
 [Tablero Jira](https://alu-team-b9ozfnoh.atlassian.net/jira/software/projects/KAN/boards/1?atlOrigin=eyJpIjoiMGFkYTg3ZWMxNjUwNDJjMWE1YTI3MGViOTEyYzJkODUiLCJwIjoiaiJ9)
 
-[Video demostrativo]()
+[Video demostrativo](https://drive.google.com/file/d/1jmEn5ognmxdPr9W32p_sxRTxq7vV1VSt/view?usp=sharing)
 
 ---
 
