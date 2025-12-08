@@ -24,9 +24,43 @@ if (isset($_SESSION['usuario_id'])) {
 $conn = (new ConnectionController())->connect();
 $usuario_id = (int) $_SESSION['usuario_id'];
 
-$query = "SELECT * FROM producto WHERE usuario_id = ?";
+// ======================
+//    P A G I N A C I Ó N
+// ======================
+$perPage = 9; // 3x3
+$page = 1;
+
+if (isset($_GET['page']) && ctype_digit($_GET['page']) && (int) $_GET['page'] > 0) {
+    $page = (int) $_GET['page'];
+}
+
+// 1) Contar total de productos del usuario
+$sqlCount = "SELECT COUNT(*) AS total FROM producto WHERE usuario_id = ?";
+$stmtCount = $conn->prepare($sqlCount);
+$stmtCount->bind_param("i", $usuario_id);
+$stmtCount->execute();
+$resCount = $stmtCount->get_result();
+$rowCount = $resCount->fetch_assoc();
+$totalProducts = (int) ($rowCount['total'] ?? 0);
+$stmtCount->close();
+
+$totalPages = $totalProducts > 0 ? ceil($totalProducts / $perPage) : 1;
+
+// Si la página pedida es mayor que el total, la ajustamos
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
+
+$offset = ($page - 1) * $perPage;
+
+// 2) Obtener solo los productos de la página actual
+$query = "SELECT * 
+          FROM producto 
+          WHERE usuario_id = ?
+          ORDER BY producto_id DESC
+          LIMIT ?, ?";
 $stmt = $conn->prepare($query);
-$stmt->bind_param("i", $usuario_id);
+$stmt->bind_param("iii", $usuario_id, $offset, $perPage);
 $stmt->execute();
 $result = $stmt->get_result();
 ?>
@@ -120,50 +154,68 @@ $result = $stmt->get_result();
 
         <!-- GRID -->
         <section class="seller-grid" aria-label="Listado de productos">
-            <?php while ($row = $result->fetch_assoc()): ?>
-                <article class="seller-card">
+            <?php if ($totalProducts === 0): ?>
+                <p>No tienes productos registrados todavía.</p>
+            <?php else: ?>
+                <?php while ($row = $result->fetch_assoc()): ?>
+                    <article class="seller-card">
 
-                    <a class="thumb" href="editar-producto.php?id=<?php echo $row['producto_id']; ?>">
-                        <img src="<?php echo htmlspecialchars($row['imagen']); ?>"
-                            alt="<?php echo htmlspecialchars($row['nombre']); ?>">
-                    </a>
+                        <a class="thumb" href="editar-producto.php?id=<?php echo $row['producto_id']; ?>">
+                            <img src="<?php echo htmlspecialchars($row['imagen']); ?>"
+                                alt="<?php echo htmlspecialchars($row['nombre']); ?>">
+                        </a>
 
-                    <h3 class="item-title"><?php echo htmlspecialchars($row['nombre']); ?></h3>
+                        <h3 class="item-title"><?php echo htmlspecialchars($row['nombre']); ?></h3>
 
-                    <div class="item-meta">
-                        <span class="price">$<?php echo number_format($row['precio'], 2); ?></span>
+                        <div class="item-meta">
+                            <span class="price">$<?php echo number_format($row['precio'], 2); ?></span>
 
-                        <?php if ($row['stock'] <= 3): ?>
-                            <span class="stock stock-low">Stock:
-                                <strong><?php echo (int) $row['stock']; ?></strong> disponibles</span>
-                        <?php else: ?>
-                            <span class="stock">Stock:
-                                <strong><?php echo (int) $row['stock']; ?></strong> disponibles</span>
-                        <?php endif; ?>
-                    </div>
+                            <?php if ($row['stock'] <= 3): ?>
+                                <span class="stock stock-low">Stock:
+                                    <strong><?php echo (int) $row['stock']; ?></strong> disponibles</span>
+                            <?php else: ?>
+                                <span class="stock">Stock:
+                                    <strong><?php echo (int) $row['stock']; ?></strong> disponibles</span>
+                            <?php endif; ?>
+                        </div>
 
-                    <div class="item-actions">
-                        <!-- ELIMINAR -->
-                        <form action="app/controllers/productController.php" method="post" class="inline">
-                            <input type="hidden" name="action" value="delete_product">
-                            <input type="hidden" name="producto_id" value="<?php echo $row['producto_id']; ?>">
-                            <button type="submit" class="btn-danger">Eliminar</button>
-                        </form>
+                        <div class="item-actions">
+                            <!-- ELIMINAR -->
+                            <form action="app/controllers/productController.php" method="post" class="inline">
+                                <input type="hidden" name="action" value="delete_product">
+                                <input type="hidden" name="producto_id" value="<?php echo $row['producto_id']; ?>">
+                                <button type="submit" class="btn-danger">Eliminar</button>
+                            </form>
 
-                        <!-- EDITAR -->
-                        <a href="editar-producto.php?id=<?php echo $row['producto_id']; ?>" class="btn-outline">Editar</a>
-                    </div>
+                            <!-- EDITAR -->
+                            <a href="editar-producto.php?id=<?php echo $row['producto_id']; ?>" class="btn-outline">Editar</a>
+                        </div>
 
-                </article>
-            <?php endwhile; ?>
+                    </article>
+                <?php endwhile; ?>
+            <?php endif; ?>
         </section>
 
-        <!-- Paginación (placeholder) -->
-        <nav class="seller-pager" aria-label="Paginación">
-            <a class="pager-btn is-disabled" href="#" aria-disabled="true">Anterior</a>
-            <span class="pager-info">Página 1 de 5</span>
-            <a class="pager-btn" href="?page=2">Siguiente</a>
-        </nav>
+        <!-- Paginación real -->
+        <?php if ($totalPages > 1): ?>
+            <nav class="seller-pager" aria-label="Paginación">
+                <?php if ($page > 1): ?>
+                    <a class="pager-btn" href="?page=<?php echo $page - 1; ?>">Anterior</a>
+                <?php else: ?>
+                    <span class="pager-btn is-disabled" aria-disabled="true">Anterior</span>
+                <?php endif; ?>
+
+                <span class="pager-info">
+                    Página <?php echo $page; ?> de <?php echo $totalPages; ?>
+                </span>
+
+                <?php if ($page < $totalPages): ?>
+                    <a class="pager-btn" href="?page=<?php echo $page + 1; ?>">Siguiente</a>
+                <?php else: ?>
+                    <span class="pager-btn is-disabled" aria-disabled="true">Siguiente</span>
+                <?php endif; ?>
+            </nav>
+        <?php endif; ?>
     </main>
 
     <footer class="footer">

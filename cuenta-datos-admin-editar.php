@@ -259,6 +259,7 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
       });
     });
   </script>
+  <script src="Assets/js/validaciones.js"></script>
 </body>
 
 </html>

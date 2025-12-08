@@ -288,6 +288,8 @@ if ($logged) {
       });
     });
   </script>
+
+  <script src="Assets/js/validaciones.js"></script>
 </body>
 
 </html>

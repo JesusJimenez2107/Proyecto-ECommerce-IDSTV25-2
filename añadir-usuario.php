@@ -247,6 +247,7 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
     <footer class="footer">
         <p>© Raíz Viva</p>
     </footer>
+    <script src="Assets/js/validaciones.js"></script>
 </body>
 
 </html>

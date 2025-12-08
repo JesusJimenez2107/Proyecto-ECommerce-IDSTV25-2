@@ -194,21 +194,24 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
       <form class="profile-form" method="POST">
 
         <label class="pf-label">Nombre</label>
-        <input class="pf-input" type="text" name="nombre" required value="<?php echo htmlspecialchars($nombre); ?>">
+        <input class="pf-input" type="text" id="nombre" name="nombre" required
+          value="<?php echo htmlspecialchars($nombre); ?>">
 
         <label class="pf-label">Apellido(s)</label>
-        <input class="pf-input" type="text" name="apellidos" required
+        <input class="pf-input" type="text" id="apellidos" name="apellidos" required
           value="<?php echo htmlspecialchars($apellidos); ?>">
 
         <label class="pf-label">Correo</label>
-        <input class="pf-input" type="email" name="correo" required value="<?php echo htmlspecialchars($email); ?>">
+        <input class="pf-input" type="email" id="correo" name="correo" required
+          value="<?php echo htmlspecialchars($email); ?>">
 
         <label class="pf-label">Dirección</label>
-        <input class="pf-input" type="text" name="direccion" required
+        <input class="pf-input" type="text" id="direccion" name="direccion" required
           value="<?php echo htmlspecialchars($direccion); ?>">
 
         <label class="pf-label">Teléfono</label>
-        <input class="pf-input" type="text" name="telefono" required value="<?php echo htmlspecialchars($telefono); ?>">
+        <input class="pf-input" type="text" id="telefono" name="telefono" required
+          value="<?php echo htmlspecialchars($telefono); ?>">
 
         <div class="pf-actions">
           <a class="btn-cancel" href="datos-usuario-admin.php?id=<?php echo $usuarioId; ?>">Cancelar</a>
@@ -222,6 +225,7 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
   <footer class="footer">
     <p>© Raíz Viva</p>
   </footer>
+  <script src="Assets/js/validaciones.js"></script>
 </body>
 
 </html>

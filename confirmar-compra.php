@@ -215,6 +215,7 @@ $cartCount = $cart->getCartCount($usuario_id);
             });
         });
     </script>
+    <script src="Assets/js/validaciones.js"></script>
 
 </body>
 

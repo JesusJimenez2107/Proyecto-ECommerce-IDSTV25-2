@@ -63,6 +63,37 @@ class ProductController
         return $result->fetch_assoc();
     }
 
+    // Buscar productos por texto en nombre o descripción
+    public function searchProducts($texto, $categoria_id = null)
+    {
+        $conn = $this->connection->connect();
+        $like = "%" . $texto . "%";
+
+        if ($categoria_id) {
+            $query = "SELECT * FROM producto
+                  WHERE estado = 'activo'
+                    AND categoria_categoria_id = ?
+                    AND (nombre LIKE ? OR descripcion LIKE ?)
+                  ORDER BY producto_id DESC";
+
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("iss", $categoria_id, $like, $like);
+
+        } else {
+            $query = "SELECT * FROM producto
+                  WHERE estado = 'activo'
+                    AND (nombre LIKE ? OR descripcion LIKE ?)
+                  ORDER BY producto_id DESC";
+
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("ss", $like, $like);
+        }
+
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+
+
     /* =========================================================
      * MÉTODOS PARA DUEÑO / ADMIN
      * ========================================================= */
@@ -343,6 +374,8 @@ function uploadImage($fileInputName)
     }
     return null;
 }
+
+
 
 /* =======================
  * ROUTER POST

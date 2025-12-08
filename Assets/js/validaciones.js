@@ -1,5 +1,3 @@
-console.log("aplico js");
-
 function clearAllErrors() {
     const inputs = document.querySelectorAll('input');
     inputs.forEach(input => input.classList.remove('input-error'));
@@ -8,6 +6,9 @@ function clearAllErrors() {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^\d{10}$/;
 
+// Solo letras (incluye acentos y ñ)
+const NAME_REGEX = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/;
+
 function validateLogin() {
     clearAllErrors();
     let isValid = true;
@@ -15,18 +16,15 @@ function validateLogin() {
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
 
-    
     if (email === '' || !EMAIL_REGEX.test(email)) {
         document.getElementById('email').classList.add('input-error');
         isValid = false;
     }
 
-   
     if (password === '') {
         document.getElementById('password').classList.add('input-error');
         isValid = false;
     }
-
 
     return isValid;
 }
@@ -35,47 +33,95 @@ function validateRegister() {
     clearAllErrors();
     let isValid = true;
 
-    const nombre = document.getElementById('nombre').value.trim();
-    const apellidos = document.getElementById('apellidos').value.trim();
-    const correo = document.getElementById('correo').value.trim();
-    const password = document.getElementById('password').value;
-    const direccion = document.getElementById('direccion').value.trim();
-    const telefono = document.getElementById('telefono').value.trim();
+    const nombreInput = document.getElementById('nombre');
+    const apellidosInput = document.getElementById('apellidos');
+    const correoInput = document.getElementById('correo');
+    const passwordInput = document.getElementById('password');
+    const direccionInput = document.getElementById('direccion');
+    const telefonoInput = document.getElementById('telefono');
 
-    if (nombre === '') {
-        document.getElementById('nombre').classList.add('input-error');
+    const nombre = nombreInput.value.trim();
+    const apellidos = apellidosInput.value.trim();
+    const correo = correoInput.value.trim();
+    const password = passwordInput.value;
+    const direccion = direccionInput.value.trim();
+    const telefono = telefonoInput.value.trim();
+
+    // NOMBRE
+    if (nombre === '' || !NAME_REGEX.test(nombre)) {
+        nombreInput.classList.add('input-error');
         isValid = false;
     }
-    if (apellidos === '') {
-        document.getElementById('apellidos').classList.add('input-error');
+
+    // APELLIDOS
+    if (apellidos === '' || !NAME_REGEX.test(apellidos)) {
+        apellidosInput.classList.add('input-error');
         isValid = false;
     }
+
+    // DIRECCIÓN
     if (direccion === '') {
-        document.getElementById('direccion').classList.add('input-error');
-        isValid = false;
-    }
-    if (password === '') {
-        document.getElementById('password').classList.add('input-error');
-        isValid = false;
-    }
-    if (correo === '' || !EMAIL_REGEX.test(correo)) {
-        document.getElementById('correo').classList.add('input-error');
-        isValid = false;
-    }
-    if (telefono === '' || !PHONE_REGEX.test(telefono)) {
-        document.getElementById('telefono').classList.add('input-error');
+        direccionInput.classList.add('input-error');
         isValid = false;
     }
 
-    
+    // CONTRASEÑA
+    if (password === '') {
+        passwordInput.classList.add('input-error');
+        isValid = false;
+    }
+
+    // CORREO
+    if (correo === '' || !EMAIL_REGEX.test(correo)) {
+        correoInput.classList.add('input-error');
+        isValid = false;
+    }
+
+    // TELÉFONO
+    if (telefono === '' || !PHONE_REGEX.test(telefono)) {
+        telefonoInput.classList.add('input-error');
+        isValid = false;
+    }
+
     return isValid;
 }
 
-//dnskjndkdks
-
 document.addEventListener("DOMContentLoaded", function () {
 
-    
+    //Limpiar en tiempo real nombre y apellidos (solo letras)
+    const nombre = document.getElementById('nombre');
+    const apellidos = document.getElementById('apellidos');
+    const telefono = document.getElementById('telefono');
+
+    function soloLetras(input) {
+        input.value = input.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, "");
+    }
+
+    function soloNumeros(input) {
+        // Elimina todo lo que no sea dígito y limita a 10 caracteres
+        input.value = input.value.replace(/\D/g, "").slice(0, 10);
+    }
+
+    if (nombre) {
+        nombre.addEventListener("input", function () {
+            soloLetras(nombre);
+        });
+    }
+
+    if (apellidos) {
+        apellidos.addEventListener("input", function () {
+            soloLetras(apellidos);
+        });
+    }
+
+    //Teléfono solo números en tiempo real
+    if (telefono) {
+        telefono.addEventListener("input", function () {
+            soloNumeros(telefono);
+        });
+    }
+
+    //LÓGICA DE LAS FOTOS
     const photoContainers = document.querySelectorAll(".pf-photo");
 
     photoContainers.forEach(container => {
@@ -85,7 +131,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const removeBtn = container.querySelector(".pf-photo__remove");
         const label = container.querySelector(".pf-photo__drop");
 
-        // para ver la imagen del producto enel recuadro antes de crear el producto
+        // para ver la imagen del producto en el recuadro antes de crear el producto
         input.addEventListener("change", function () {
             const file = this.files[0];
 

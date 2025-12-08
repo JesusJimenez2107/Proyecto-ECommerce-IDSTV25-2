@@ -235,31 +235,32 @@ body {
 }
 
 /* --------- Paginación --------- */
-.pagination {
+/* Paginación */
+.seller-pager {
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 12px;
-    margin: 18px 0 6px;
+    justify-content: center;
+    margin: 18px 0 8px;
 }
 
-.page-btn {
-    border: 1px solid #d9d3c7;
-    background: #fff;
-    color: #2f2f2f;
+.pager-btn {
+    border: 1px solid #d6d2c7;
     padding: 8px 12px;
     border-radius: 10px;
-    cursor: pointer;
-    font-weight: 700;
+    text-decoration: none;
+    color: #425742;
+    font-weight: 800;
+    background: #fff;
 }
 
-.page-btn[disabled] {
+.pager-btn.is-disabled {
     opacity: .5;
-    cursor: not-allowed;
+    pointer-events: none;
 }
 
-.page-status {
-    color: #405240;
+.pager-info {
+    color: #5b6a5b;
     font-weight: 700;
 }
 
