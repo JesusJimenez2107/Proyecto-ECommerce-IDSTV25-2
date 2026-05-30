@@ -159,6 +159,9 @@ $stmtItems = $conn->prepare($sqlItems);
                             <a class="btn-ticket" href="ticket-compra.php?id=<?php echo $compraId; ?>" target="_blank">
                                 Ver<br>Ticket
                             </a>
+                            <a class="btn-track" href="rastreo.php?id=<?php echo $compraId; ?>" style="background: #586a58; color: white; padding: 10px 15px; border-radius: 8px; text-decoration: none; font-size: 0.85rem; font-weight: bold; text-align: center; margin-left: 10px; display: inline-block;">
+                                Rastrear pedido
+                            </a>
                         </header>
 
                         <ul class="order-items">

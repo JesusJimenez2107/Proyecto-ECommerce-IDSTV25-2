@@ -162,8 +162,7 @@ $cartCount = $cart->getCartCount($usuario_id);
         <section class="ck-card">
             <h2 class="ck-section-title">Información de envío</h2>
 
-            <form class="ck-form" action="app/controllers/cartController.php" method="POST" id="checkout-form">
-                <input type="hidden" name="action" value="checkout">
+            <form class="ck-form" action="pago.php" method="POST" id="checkout-form">
 
                 <label class="ck-label" for="nombre">Nombre</label>
                 <input class="ck-input" type="text" id="nombre" name="nombre" placeholder="Tu nombre completo" required>
@@ -184,7 +183,7 @@ $cartCount = $cart->getCartCount($usuario_id);
         <!-- Acciones -->
         <section class="ck-actions">
             <a href="carrito.php" class="btn-secondary">Cancelar</a>
-            <button class="btn-primary" type="submit" form="checkout-form">Confirmar</button>
+            <button class="btn-primary" type="submit" form="checkout-form">Continuar</button>
         </section>
 
     </main>

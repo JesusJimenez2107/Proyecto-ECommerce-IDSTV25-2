@@ -124,8 +124,8 @@ class CartController
         $stmt->execute();
     }
 
-    //finalizar compra
-    public function checkout($usuario_id, $nombre, $direccion, $ciudad, $telefono)
+    // FINALIZAR COMPRA Y PROCESAR PAGO
+    public function checkout($usuario_id, $nombre, $direccion, $ciudad, $telefono, $correo, $titular, $tarjeta, $dir_facturacion, $ciudad_fact, $cp_fact, $pais_fact)
     {
         $conn = $this->connection->connect();
 
@@ -163,13 +163,14 @@ class CartController
         $conn->begin_transaction();
 
         try {
-            // 4) Insertar compra
+            // 4) Insertar la compra (Datos de envío)
             $qCompra = "INSERT INTO compra 
                     (total, nombre_envio, direccion_envio, ciudad_envio, telefono_envio, usuario_usuario_id)
                     VALUES (?, ?, ?, ?, ?, ?)";
             $stmtCompra = $conn->prepare($qCompra);
+            // Usamos "s" para el total para evitar problemas de casting en DECIMAL/FLOAT
             $stmtCompra->bind_param(
-                "dssssi",
+                "sssssi",
                 $total,
                 $nombre,
                 $direccion,
@@ -180,16 +181,11 @@ class CartController
             $stmtCompra->execute();
             $compra_id = $conn->insert_id;
 
-            // 5) Insertar detalles y actualizar stock
+            // 5) Insertar detalles (Tus triggers en BD descontarán el stock automáticamente)
             $qDetalle = "INSERT INTO detalle_compra
                         (cantidad, precio_unitario, subtotal, compra_compra_id, producto_producto_id)
                      VALUES (?, ?, ?, ?, ?)";
             $stmtDetalle = $conn->prepare($qDetalle);
-
-            $qStock = "UPDATE producto
-                   SET stock = stock - ?
-                   WHERE producto_id = ?";
-            $stmtStock = $conn->prepare($qStock);
 
             foreach ($items as $item) {
                 $cantidad = (int) $item['cantidad'];
@@ -197,8 +193,9 @@ class CartController
                 $subtotal = $cantidad * $precio;
                 $producto_id = (int) $item['producto_id'];
 
+                // Usamos 's' para los decimales (precio y subtotal) para mayor seguridad
                 $stmtDetalle->bind_param(
-                    "iddii",
+                    "issii",
                     $cantidad,
                     $precio,
                     $subtotal,
@@ -206,15 +203,34 @@ class CartController
                     $producto_id
                 );
                 $stmtDetalle->execute();
-
-                $stmtStock->bind_param("ii", $cantidad, $producto_id);
-                $stmtStock->execute();
             }
 
-            // 6) Vaciar carrito
+            // 6) Registrar el Pago en la nueva tabla
+            $tarjetaLimpia = str_replace(' ', '', $tarjeta);
+            $ultimos_digitos = substr($tarjetaLimpia, -4);
+
+            $qPago = "INSERT INTO pago 
+                     (compra_compra_id, correo, titular_tarjeta, ultimos_digitos, dir_facturacion, ciudad_fact, cp_fact, pais_fact) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            
+            $stmtPago = $conn->prepare($qPago);
+            $stmtPago->bind_param(
+                "isssssss", 
+                $compra_id, 
+                $correo, 
+                $titular, 
+                $ultimos_digitos, 
+                $dir_facturacion, 
+                $ciudad_fact, 
+                $cp_fact, 
+                $pais_fact
+            );
+            $stmtPago->execute();
+
+            // 7) Vaciar carrito
             $this->clearCart($usuario_id);
 
-            // 7) Confirmamos
+            // 8) Confirmamos la transacción completa
             $conn->commit();
 
             return "success";
@@ -284,19 +300,34 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         exit;
     } elseif ($action === 'checkout') {
 
+        // 1. Datos de envío (vienen ocultos desde la vista de pago)
         $nombre = $_POST['nombre'] ?? '';
         $direccion = $_POST['direccion'] ?? '';
         $ciudad = $_POST['ciudad'] ?? '';
         $telefono = $_POST['telefono'] ?? '';
 
-        $result = $cart->checkout($usuario_id, $nombre, $direccion, $ciudad, $telefono);
+        // 2. Datos de pago (vienen del formulario visible de pago)
+        $correo = $_POST['correo'] ?? '';
+        $titular = $_POST['titular'] ?? '';
+        $tarjeta = $_POST['tarjeta'] ?? '';
+        $dir_facturacion = $_POST['dir_facturacion'] ?? '';
+        $ciudad_fact = $_POST['ciudad_fact'] ?? '';
+        $cp_fact = $_POST['cp_fact'] ?? '';
+        $pais = $_POST['pais'] ?? '';
 
+        // Ejecutamos la función con todas las variables
+        $result = $cart->checkout(
+            $usuario_id, $nombre, $direccion, $ciudad, $telefono, 
+            $correo, $titular, $tarjeta, $dir_facturacion, $ciudad_fact, $cp_fact, $pais
+        );
+
+        // Redirigimos a la página de pago para mostrar el resultado (modal)
         if ($result === "success") {
-            header("Location: ../../confirmar-compra.php?msg=success");
+            header("Location: ../../pago.php?msg=success");
         } elseif ($result === "stock") {
-            header("Location: ../../confirmar-compra.php?msg=stock");
+            header("Location: ../../pago.php?msg=stock");
         } else {
-            header("Location: ../../confirmar-compra.php?msg=error");
+            header("Location: ../../pago.php?msg=error");
         }
         exit;
     }

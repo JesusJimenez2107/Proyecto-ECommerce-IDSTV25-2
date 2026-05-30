@@ -23,8 +23,7 @@ class UserModel{
         
         
         $rol = 'cliente';
-        
-		// CÓDIGO CORREGIDO PARA LA LÍNEA 28
+       
         $query = "INSERT INTO " . $this->table . " (nombre, apellidos, email, password, rol, direccion, telefono) VALUES (?,?,?,?,?,?,?)";
 		$prepared_query = $conn->prepare($query);
 
