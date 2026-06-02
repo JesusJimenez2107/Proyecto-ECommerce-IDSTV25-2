@@ -192,7 +192,7 @@ if ($producto) {
                 <div class="pd-cta">
                     <div class="pd-qty" role="group" aria-label="Cantidad">
                         <button type="button" class="qty-btn" data-action="minus" aria-label="Disminuir">−</button>
-                        <input class="qty-input" type="number" value="1" min="1" aria-label="Cantidad">
+                        <input class="qty-input" type="number" value="1" min="1" max="<?php echo (int)$producto['stock']; ?>" aria-label="Cantidad">
                         <button type="button" class="qty-btn" data-action="plus" aria-label="Aumentar">+</button>
                     </div>
 
@@ -256,6 +256,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (qtyContainer && qtyInput && qtyHidden) {
         const btns = qtyContainer.querySelectorAll('.qty-btn');
+        // Leemos el stock máximo que pusimos en el HTML
+        const maxStock = parseInt(qtyInput.getAttribute('max'), 10) || 1;
 
         btns.forEach(function (btn) {
             btn.addEventListener('click', function () {
@@ -264,7 +266,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (btn.dataset.action === 'minus') {
                     if (current > 1) current--;
                 } else if (btn.dataset.action === 'plus') {
-                    current++;
+                    // Solo sube si no hemos llegado al límite
+                    if (current < maxStock) {
+                        current++;
+                    } else {
+                        alert("Solo hay " + maxStock + " piezas disponibles de este producto.");
+                    }
                 }
 
                 qtyInput.value = current;
@@ -274,7 +281,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
         qtyInput.addEventListener('input', function () {
             let val = parseInt(qtyInput.value, 10);
-            if (isNaN(val) || val < 1) val = 1;
+            
+            // Si pone 0 o letras, lo regresamos a 1
+            if (isNaN(val) || val < 1) {
+                val = 1;
+            } 
+            // Si teclea un número mayor al stock, lo topamos
+            else if (val > maxStock) {
+                val = maxStock;
+                alert("Solo hay " + maxStock + " piezas disponibles de este producto.");
+            }
+            
             qtyInput.value = val;
             qtyHidden.value = val;
         });

@@ -158,8 +158,8 @@ $cartCount = $cart->getCartCount($usuario_id);
 
                                 <div class="qty-group" role="group" aria-label="Cantidad">
                                     <input class="qty-input auto-update" type="number" name="cantidad"
-                                        value="<?php echo (int) $item['cantidad']; ?>" min="1" aria-label="Cantidad"
-                                        style="width: 60px;" />
+                                        value="<?php echo (int) $item['cantidad']; ?>" min="1"
+                                        max="<?php echo (int) $item['stock']; ?>" aria-label="Cantidad" style="width: 60px;" />
                                 </div>
                             </form>
                         </div>
@@ -227,9 +227,17 @@ $cartCount = $cart->getCartCount($usuario_id);
                         const form = input.closest("form");
                         if (!form) return;
 
+                        let val = parseInt(input.value);
+                        let maxVal = parseInt(input.max);
+
                         // Asegurar mínimo 1
-                        if (parseInt(input.value) < 1 || isNaN(parseInt(input.value))) {
+                        if (val < 1 || isNaN(val)) {
                             input.value = 1;
+                        }
+                        // Asegurar que no rebase el máximo stock
+                        else if (val > maxVal) {
+                            input.value = maxVal;
+                            alert("Solo hay " + maxVal + " piezas disponibles de este producto.");
                         }
 
                         form.submit();

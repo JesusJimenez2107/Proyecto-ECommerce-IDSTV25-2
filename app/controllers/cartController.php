@@ -13,12 +13,20 @@ class CartController
         $this->connection = new ConnectionController();
     }
 
-    // Agregar al carrito (si ya existe el producto, solo suma cantidad)
+    // Agregar al carrito (Verificando que no sobrepase el stock)
     public function addToCart($usuario_id, $producto_id, $cantidad)
     {
         $conn = $this->connection->connect();
 
-        // Ver si ya existe este producto en el carrito de este usuario
+        // 1. Consultar el stock real disponible en la base de datos
+        $qStock = "SELECT stock FROM producto WHERE producto_id = ?";
+        $sStmt = $conn->prepare($qStock);
+        $sStmt->bind_param("i", $producto_id);
+        $sStmt->execute();
+        $resStock = $sStmt->get_result()->fetch_assoc();
+        $stockDisponible = $resStock ? (int) $resStock['stock'] : 0;
+
+        // 2. Ver si ya existe este producto en el carrito de este usuario
         $query = "SELECT carrito_id, cantidad 
                   FROM carrito 
                   WHERE usuario_usuario_id = ? AND producto_producto_id = ?";
@@ -29,8 +37,14 @@ class CartController
         $row = $result->fetch_assoc();
 
         if ($row) {
-            // Ya existe → actualizar cantidad
+            // Ya existe → sumar la cantidad nueva a la que ya tenía
             $nuevoTotal = $row['cantidad'] + $cantidad;
+
+            // Si la suma de ambos supera el stock, lo topamos al máximo
+            if ($nuevoTotal > $stockDisponible) {
+                $nuevoTotal = $stockDisponible;
+            }
+
             $update = "UPDATE carrito 
                        SET cantidad = ? 
                        WHERE carrito_id = ?";
@@ -39,6 +53,12 @@ class CartController
             $uStmt->execute();
         } else {
             // No existe → insertar nuevo
+
+            // Si intenta meter de golpe más de lo que hay, lo topamos
+            if ($cantidad > $stockDisponible) {
+                $cantidad = $stockDisponible;
+            }
+
             $insert = "INSERT INTO carrito 
                        (usuario_usuario_id, producto_producto_id, cantidad) 
                        VALUES (?, ?, ?)";
@@ -54,7 +74,7 @@ class CartController
         $conn = $this->connection->connect();
 
         $query = "SELECT c.carrito_id, c.cantidad,
-                         p.producto_id, p.nombre, p.precio, p.imagen
+                         p.producto_id, p.nombre, p.precio, p.imagen, p.stock
                   FROM carrito c
                   INNER JOIN producto p 
                     ON c.producto_producto_id = p.producto_id
@@ -106,7 +126,7 @@ class CartController
         $stmt->execute();
     }
 
-    //Modificar cantidades
+    //Modificar cantidades respetando el stock
     public function updateQuantity($carrito_id, $usuario_id, $cantidad)
     {
         $conn = $this->connection->connect();
@@ -116,6 +136,22 @@ class CartController
             $cantidad = 1;
         }
 
+        // Consultar el stock máximo disponible de este producto
+        $qStock = "SELECT p.stock 
+                   FROM carrito c 
+                   INNER JOIN producto p ON c.producto_producto_id = p.producto_id 
+                   WHERE c.carrito_id = ? AND c.usuario_usuario_id = ?";
+        $stmtStock = $conn->prepare($qStock);
+        $stmtStock->bind_param("ii", $carrito_id, $usuario_id);
+        $stmtStock->execute();
+        $resStock = $stmtStock->get_result()->fetch_assoc();
+
+        // Si la cantidad solicitada supera el stock, la topamos al máximo disponible
+        if ($resStock && $cantidad > $resStock['stock']) {
+            $cantidad = $resStock['stock'];
+        }
+
+        // Actualizamos
         $query = "UPDATE carrito
               SET cantidad = ?
               WHERE carrito_id = ? AND usuario_usuario_id = ?";
@@ -212,17 +248,17 @@ class CartController
             $qPago = "INSERT INTO pago 
                      (compra_compra_id, correo, titular_tarjeta, ultimos_digitos, dir_facturacion, ciudad_fact, cp_fact, pais_fact) 
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-            
+
             $stmtPago = $conn->prepare($qPago);
             $stmtPago->bind_param(
-                "isssssss", 
-                $compra_id, 
-                $correo, 
-                $titular, 
-                $ultimos_digitos, 
-                $dir_facturacion, 
-                $ciudad_fact, 
-                $cp_fact, 
+                "isssssss",
+                $compra_id,
+                $correo,
+                $titular,
+                $ultimos_digitos,
+                $dir_facturacion,
+                $ciudad_fact,
+                $cp_fact,
                 $pais_fact
             );
             $stmtPago->execute();
@@ -317,8 +353,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         // Ejecutamos la función con todas las variables
         $result = $cart->checkout(
-            $usuario_id, $nombre, $direccion, $ciudad, $telefono, 
-            $correo, $titular, $tarjeta, $dir_facturacion, $ciudad_fact, $cp_fact, $pais
+            $usuario_id,
+            $nombre,
+            $direccion,
+            $ciudad,
+            $telefono,
+            $correo,
+            $titular,
+            $tarjeta,
+            $dir_facturacion,
+            $ciudad_fact,
+            $cp_fact,
+            $pais
         );
 
         // Redirigimos a la página de pago para mostrar el resultado (modal)
