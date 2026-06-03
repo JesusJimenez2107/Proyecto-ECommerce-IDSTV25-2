@@ -87,6 +87,16 @@ img {
     z-index: 1000;
 }
 
+.nav-menu::before {
+    content: "";
+    position: absolute;
+    top: -10px; /* Sube un poco para cubrir el margin-top de 8px */
+    left: 0;
+    width: 100%;
+    height: 10px; /* Crea un puente invisible de 10px de alto */
+    background: transparent; 
+}
+
 .nav-menu__item {
     display: block;
     padding: 10px 12px;

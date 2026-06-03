@@ -1,6 +1,9 @@
 function clearAllErrors() {
     const inputs = document.querySelectorAll('input');
-    inputs.forEach(input => input.classList.remove('input-error'));
+    inputs.forEach(input => {
+        input.classList.remove('input-error');
+        input.setCustomValidity(''); // NUEVO: Limpia los mensajes de error de la burbuja
+    });
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -71,6 +74,17 @@ function validateRegister() {
         isValid = false;
     }
 
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    const confirmPassword = confirmPasswordInput.value;
+
+    // CONTRASEÑA COINCIDENCIA
+    if (password !== confirmPassword) {
+        confirmPasswordInput.classList.add('input-error');
+        confirmPasswordInput.setCustomValidity('Las contraseñas no coinciden.');
+        confirmPasswordInput.reportValidity();
+        isValid = false;
+    }
+
     // CORREO
     if (correo === '' || !EMAIL_REGEX.test(correo)) {
         correoInput.classList.add('input-error');
@@ -80,6 +94,11 @@ function validateRegister() {
     // TELÉFONO
     if (telefono === '' || !PHONE_REGEX.test(telefono)) {
         telefonoInput.classList.add('input-error');
+
+        // NUEVO: Definimos el mensaje y obligamos al navegador a mostrarlo
+        telefonoInput.setCustomValidity('Por favor, ingresa un número de exactamente 10 dígitos.');
+        telefonoInput.reportValidity();
+
         isValid = false;
     }
 
@@ -155,10 +174,10 @@ document.addEventListener("DOMContentLoaded", function () {
         // elimina la imagen del recuadro antes de crear el producto
         removeBtn.addEventListener("click", function () {
 
-            input.value = "";                 
-            frame.style.backgroundImage = ""; 
-            frame.style.border = "";          
-            label.style.display = "block";    
+            input.value = "";
+            frame.style.backgroundImage = "";
+            frame.style.border = "";
+            label.style.display = "block";
 
             removeBtn.disabled = true;
         });

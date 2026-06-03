@@ -30,7 +30,7 @@ class AuthController{
         $conn = $this->connection->connect();
         if (!$conn->connect_error) {
             
-            $query = "SELECT usuario_id, password, rol FROM usuario WHERE email = ?";
+            $query = "SELECT usuario_id, nombre, password, rol FROM usuario WHERE email = ?";
 
             $prepared_query = $conn->prepare($query);
             $prepared_query->bind_param('s', $email);
@@ -48,6 +48,7 @@ class AuthController{
                     $_SESSION['email'] = $email;
                     $_SESSION['rol'] = $users[0]['rol'];
                     $_SESSION['usuario_id'] = $users[0]['usuario_id'];
+                    $_SESSION['nombre'] = $users[0]['nombre'];
                     
                     if ($users[0]['rol'] == "admin") {
                         header("Location: ../../panel-admin.php");

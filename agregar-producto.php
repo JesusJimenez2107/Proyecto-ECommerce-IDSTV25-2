@@ -20,7 +20,7 @@ if (isset($_SESSION['usuario_id'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Raíz Viva – Agregar producto</title>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="Assets/styles/global.css">
+    <link rel="stylesheet" href="Assets/styles/global.css?v=2">
     <link rel="stylesheet" href="Assets/styles/product-new.css">
 </head>
 
@@ -28,29 +28,50 @@ if (isset($_SESSION['usuario_id'])) {
     <header class="topbar">
         <div class="topbar__inner">
             <a class="brand" href="index.php">
-                <img src="Assets/img/logo.png" alt="Raíz Viva">
+                <img src="Assets/img/logo.png" alt="Raíz Viva" />
             </a>
 
             <div class="nav-dropdown">
-                <button class="nav-dropbtn" aria-haspopup="true" aria-expanded="false" aria-controls="menuProductos">
+                <button class="nav-dropbtn" id="btnProductos" aria-haspopup="true" aria-expanded="false"
+                    aria-controls="menuProductos">
                     Productos
                     <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
                         <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" />
                     </svg>
                 </button>
-                <nav class="nav-menu" id="menuProductos" hidden>
-                    <a role="menuitem" href="/cat-interior" class="nav-menu__item">Plantas de interior</a>
-                    <a role="menuitem" href="/cat-exterior" class="nav-menu__item">Plantas de exterior</a>
-                    <a role="menuitem" href="/cat-bajo" class="nav-menu__item">Bajo mantenimiento</a>
-                    <a role="menuitem" href="/cat-aromaticas" class="nav-menu__item">Aromáticas y comestibles</a>
-                    <a role="menuitem" href="/cat-macetas" class="nav-menu__item">Macetas y accesorios</a>
-                    <a role="menuitem" href="/cat-cuidados" class="nav-menu__item">Cuidados y bienestar</a>
+
+                <!-- Menú de categorías -->
+                <nav class="nav-menu" id="menuProductos" role="menu" hidden>
+                    <a role="menuitem" href="productos.php?cat=1" class="nav-menu__item">
+                        Plantas de interior
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=2" class="nav-menu__item">
+                        Plantas de exterior
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=3" class="nav-menu__item">
+                        Bajo mantenimiento
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=4" class="nav-menu__item">
+                        Aromáticas y comestibles
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=5" class="nav-menu__item">
+                        Macetas y accesorios
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=6" class="nav-menu__item">
+                        Cuidados y bienestar
+                    </a>
                 </nav>
             </div>
 
-            <form class="search" role="search">
-                <input type="search" placeholder="Buscar" aria-label="Buscar">
+            <form action="productos.php" method="GET" class="search" role="search">
+                <input type="search" name="search" placeholder="Buscar" aria-label="Buscar"
+                    value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
                 <button type="submit" aria-label="Buscar">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#586a58" stroke-width="2">
                         <circle cx="11" cy="11" r="7" />
@@ -60,18 +81,42 @@ if (isset($_SESSION['usuario_id'])) {
             </form>
 
             <div class="actions">
-                <a href="mi-cuenta.php" class="action">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                        <path d="M20 21a8 8 0 1 0-16 0" />
-                        <circle cx="12" cy="7" r="4" />
-                    </svg>
-                    <span>Mi cuenta</span>
-                </a>
+
+                <?php if ($logged): ?>
+                    <a href="mi-cuenta.php" class="action">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+                            <path d="M20 21a8 8 0 1 0-16 0" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <span>
+                            <?php
+                            // Si existe el nombre en sesión, extraemos solo el primer nombre
+                            if (isset($_SESSION['nombre']) && !empty($_SESSION['nombre'])) {
+                                $primerNombre = explode(' ', trim($_SESSION['nombre']))[0];
+                                // Ponemos la primera letra en mayúscula
+                                echo htmlspecialchars(ucfirst(strtolower($primerNombre)));
+                            } else {
+                                echo 'Mi cuenta';
+                            }
+                            ?>
+                        </span>
+                    </a>
+                <?php else: ?>
+                    <a href="login.php" class="action">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+                            <path d="M20 21a8 8 0 1 0-16 0" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <span>Ingresar</span>
+                    </a>
+                <?php endif; ?>
+
+
                 <a href="carrito.php" class="action">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                        <circle cx="10" cy="20" r="1" />
-                        <circle cx="18" cy="20" r="1" />
-                        <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6" />
+                        <circle cx="10" cy="20" r="1"></circle>
+                        <circle cx="18" cy="20" r="1"></circle>
+                        <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6"></path>
                     </svg>
                     <span><?php echo $cartCount; ?></span>
                 </a>
@@ -156,15 +201,17 @@ if (isset($_SESSION['usuario_id'])) {
                         <label for="price">Precio</label>
                         <div class="pf-money">
                             <span>$</span>
-                            <input id="price" name="price" type="number" min="0" step="0.01" required
-                                placeholder="0.00">
+                            <input id="price" name="price" type="number" min="0" max="999999.99" step="0.01" required
+                                placeholder="0.00"
+                                oninput="if(this.value.length > 9) this.value = this.value.slice(0, 9);">
                         </div>
                         <small class="pf-hint">Precio incluye IVA</small>
                     </div>
 
                     <div class="pf-field pf-stock">
                         <label for="stock">Stock</label>
-                        <input id="stock" name="stock" type="number" min="0" step="1" required value="0">
+                        <input id="stock" name="stock" type="number" min="0" max="9999" step="1" required value="0"
+                            oninput="if(this.value.length > 4) this.value = this.value.slice(0, 4);">
                         <small class="pf-hint">Disponibles</small>
                     </div>
 

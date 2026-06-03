@@ -3,30 +3,39 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// --- RECEPTOR AJAX PARA LAS VENTAS DEL DÍA (AHORA FILTRADO POR VENDEDOR) ---
+// Para el header: Declarar $logged antes de usarlo en el HTML
+$logged = isset($_SESSION['usuario_id']) && !empty($_SESSION['usuario_id']);
+
+// --- RECEPTOR AJAX PARA LAS VENTAS DEL DÍA ---
 if (isset($_GET['ajax_date'])) {
     require_once "app/config/connectionController.php";
     $conn = (new ConnectionController())->connect();
-    $fecha_req = $_GET['ajax_date']; 
-    $vendedor_req = (int) $_SESSION['usuario_id']; // ID del vendedor logueado
-    
-    $qAjax = "SELECT COUNT(DISTINCT c.compra_id) as total 
-              FROM compra c
-              INNER JOIN detalle_compra d ON c.compra_id = d.compra_compra_id
-              INNER JOIN producto p ON d.producto_producto_id = p.producto_id
-              WHERE p.vendedor_id = ? AND DATE(c.fecha) = ?";
-    
-    $stmt = $conn->prepare($qAjax);
-    $stmt->bind_param("is", $vendedor_req, $fecha_req);
+    $fecha_req = $_GET['ajax_date'];
+    $vendedor_req = (int) $_SESSION['usuario_id'];
+    $isAdminAjax = (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin');
+
+    if ($isAdminAjax) {
+        $qAjax = "SELECT COUNT(DISTINCT compra_id) as total FROM compra WHERE DATE(fecha) = ?";
+        $stmt = $conn->prepare($qAjax);
+        $stmt->bind_param("s", $fecha_req);
+    } else {
+        $qAjax = "SELECT COUNT(DISTINCT c.compra_id) as total 
+                  FROM compra c
+                  INNER JOIN detalle_compra d ON c.compra_id = d.compra_compra_id
+                  INNER JOIN producto p ON d.producto_producto_id = p.producto_id
+                  WHERE p.usuario_id = ? AND DATE(c.fecha) = ?";
+        $stmt = $conn->prepare($qAjax);
+        $stmt->bind_param("is", $vendedor_req, $fecha_req);
+    }
+
     $stmt->execute();
     $res = $stmt->get_result();
-    
     echo $res->fetch_assoc()['total'] ?? 0;
-    exit; 
+    exit;
 }
 // ----------------------------------------------------
 
-if (!isset($_SESSION['usuario_id'])) {
+if (!$logged) {
     header("Location: login.php?error=login_required");
     exit;
 }
@@ -34,66 +43,109 @@ if (!isset($_SESSION['usuario_id'])) {
 require_once "app/config/connectionController.php";
 require_once "app/controllers/cartController.php";
 
-$usuario_id = (int) $_SESSION['usuario_id']; // Este es el ID del vendedor
+$usuario_id = (int) $_SESSION['usuario_id'];
+$isAdmin = (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin');
+
 $cart = new CartController();
 $cartCount = $cart->getCartCount($usuario_id);
 
 $conn = (new ConnectionController())->connect();
 
 // ==========================================
-// EXTRACCIÓN DE DATOS REALES FILTRADOS POR VENDEDOR
+// EXTRACCIÓN DE DATOS REALES (Híbrido)
 // ==========================================
 
-// 1. Total Clientes (Últimos 30 días, que compraron SUS productos)
-$qClientes = "SELECT COUNT(DISTINCT c.usuario_usuario_id) as total 
-              FROM compra c
-              INNER JOIN detalle_compra d ON c.compra_id = d.compra_compra_id
-              INNER JOIN producto p ON d.producto_producto_id = p.producto_id
-              WHERE p.vendedor_id = $usuario_id AND c.fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-$totalClientes = $conn->query($qClientes)->fetch_assoc()['total'] ?? 0;
+if ($isAdmin) {
+    // 1. Total Clientes (Admin)
+    $qClientes = "SELECT COUNT(DISTINCT usuario_usuario_id) as total FROM compra WHERE fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+    $totalClientes = $conn->query($qClientes)->fetch_assoc()['total'] ?? 0;
 
-// 2. Total Órdenes (Últimos 30 días, que incluyen SUS productos)
-$qOrdenes = "SELECT COUNT(DISTINCT c.compra_id) as total 
-             FROM compra c
-             INNER JOIN detalle_compra d ON c.compra_id = d.compra_compra_id
-             INNER JOIN producto p ON d.producto_producto_id = p.producto_id
-             WHERE p.vendedor_id = $usuario_id AND c.fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-$totalOrdenes = $conn->query($qOrdenes)->fetch_assoc()['total'] ?? 0;
+    // 2. Total Órdenes (Admin)
+    $qOrdenes = "SELECT COUNT(compra_id) as total FROM compra WHERE fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+    $totalOrdenes = $conn->query($qOrdenes)->fetch_assoc()['total'] ?? 0;
 
-// 3. En Camino (Últimos 30 días, de SUS órdenes) 
-$enCamino = 0;
-try {
-    $qCamino = "SELECT COUNT(DISTINCT s.seguimiento_id) as total 
-                FROM seguimiento_envio s
-                INNER JOIN detalle_compra d ON s.compra_id = d.compra_compra_id
-                INNER JOIN producto p ON d.producto_producto_id = p.producto_id
-                WHERE p.vendedor_id = $usuario_id AND s.estado_envio = 'En camino' AND s.fecha_actualizacion >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-    $resCamino = $conn->query($qCamino);
-    if ($resCamino) $enCamino = $resCamino->fetch_assoc()['total'] ?? 0;
-} catch (mysqli_sql_exception $e) {}
+    // 3. En Camino (Admin)
+    $enCamino = 0;
+    try {
+        $qCamino = "SELECT COUNT(seguimiento_id) as total FROM seguimiento_envio WHERE estado_envio = 'En camino' AND fecha_actualizacion >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        $resCamino = $conn->query($qCamino);
+        if ($resCamino)
+            $enCamino = $resCamino->fetch_assoc()['total'] ?? 0;
+    } catch (mysqli_sql_exception $e) {
+    }
 
-// 4. Ingreso Total (Últimos 30 días, descontando el 10% de comisión de Raíz Viva)
-// Usamos d.subtotal porque c.total es toda la compra (la cual podría incluir productos de otros vendedores)
-$qIngreso = "SELECT SUM(d.subtotal * 0.90) as total 
+    // 4. Ingreso Total (Admin - Suma de todos los totales)
+    $qIngreso = "SELECT SUM(total) as total FROM compra WHERE fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+    $resIngreso = $conn->query($qIngreso);
+    $ingresoTotal = number_format($resIngreso->fetch_assoc()['total'] ?? 0, 2);
+
+    // 5. Ventas del día de hoy (Admin)
+    $qHoy = "SELECT COUNT(compra_id) as total FROM compra WHERE DATE(fecha) = CURDATE()";
+    $ventas_hoy = $conn->query($qHoy)->fetch_assoc()['total'] ?? 0;
+
+    // Gráfica de Ventas (Admin)
+    $qGrafica = "SELECT DATE(fecha) as dia, COUNT(compra_id) as total_ventas FROM compra WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) GROUP BY DATE(fecha)";
+
+    // Top Productos (Admin)
+    $qTop = "SELECT p.nombre, p.imagen as img, SUM(d.cantidad) as total_vendido
              FROM detalle_compra d
-             INNER JOIN compra c ON d.compra_compra_id = c.compra_id
              INNER JOIN producto p ON d.producto_producto_id = p.producto_id
-             WHERE p.vendedor_id = $usuario_id AND c.fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-$resIngreso = $conn->query($qIngreso);
-$ingresoTotal = number_format($resIngreso->fetch_assoc()['total'] ?? 0, 2);
+             GROUP BY p.producto_id
+             ORDER BY total_vendido DESC LIMIT 8";
 
-// 5. Ventas del día de hoy (SUS ventas)
-$qHoy = "SELECT COUNT(DISTINCT c.compra_id) as total 
-         FROM compra c
-         INNER JOIN detalle_compra d ON c.compra_id = d.compra_compra_id
-         INNER JOIN producto p ON d.producto_producto_id = p.producto_id
-         WHERE p.vendedor_id = $usuario_id AND DATE(c.fecha) = CURDATE()";
-$ventas_hoy = $conn->query($qHoy)->fetch_assoc()['total'] ?? 0;
+} else {
+    // 1. Total Clientes (Vendedor)
+    $qClientes = "SELECT COUNT(DISTINCT c.usuario_usuario_id) as total 
+                  FROM compra c INNER JOIN detalle_compra d ON c.compra_id = d.compra_compra_id INNER JOIN producto p ON d.producto_producto_id = p.producto_id
+                  WHERE p.usuario_id = $usuario_id AND c.fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+    $totalClientes = $conn->query($qClientes)->fetch_assoc()['total'] ?? 0;
+
+    // 2. Total Órdenes (Vendedor)
+    $qOrdenes = "SELECT COUNT(DISTINCT c.compra_id) as total 
+                 FROM compra c INNER JOIN detalle_compra d ON c.compra_id = d.compra_compra_id INNER JOIN producto p ON d.producto_producto_id = p.producto_id
+                 WHERE p.usuario_id = $usuario_id AND c.fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+    $totalOrdenes = $conn->query($qOrdenes)->fetch_assoc()['total'] ?? 0;
+
+    // 3. En Camino (Vendedor)
+    $enCamino = 0;
+    try {
+        $qCamino = "SELECT COUNT(DISTINCT s.seguimiento_id) as total 
+                    FROM seguimiento_envio s INNER JOIN detalle_compra d ON s.compra_id = d.compra_compra_id INNER JOIN producto p ON d.producto_producto_id = p.producto_id
+                    WHERE p.usuario_id = $usuario_id AND s.estado_envio = 'En camino' AND s.fecha_actualizacion >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        $resCamino = $conn->query($qCamino);
+        if ($resCamino)
+            $enCamino = $resCamino->fetch_assoc()['total'] ?? 0;
+    } catch (mysqli_sql_exception $e) {
+    }
+
+    // 4. Ingreso Total (Vendedor - 90% de sus ventas)
+    $qIngreso = "SELECT SUM(d.subtotal * 0.90) as total 
+                 FROM detalle_compra d INNER JOIN compra c ON d.compra_compra_id = c.compra_id INNER JOIN producto p ON d.producto_producto_id = p.producto_id
+                 WHERE p.usuario_id = $usuario_id AND c.fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+    $resIngreso = $conn->query($qIngreso);
+    $ingresoTotal = number_format($resIngreso->fetch_assoc()['total'] ?? 0, 2);
+
+    // 5. Ventas del día de hoy (Vendedor)
+    $qHoy = "SELECT COUNT(DISTINCT c.compra_id) as total 
+             FROM compra c INNER JOIN detalle_compra d ON c.compra_id = d.compra_compra_id INNER JOIN producto p ON d.producto_producto_id = p.producto_id
+             WHERE p.usuario_id = $usuario_id AND DATE(c.fecha) = CURDATE()";
+    $ventas_hoy = $conn->query($qHoy)->fetch_assoc()['total'] ?? 0;
+
+    // Gráfica de Ventas (Vendedor)
+    $qGrafica = "SELECT DATE(c.fecha) as dia, COUNT(DISTINCT c.compra_id) as total_ventas 
+                 FROM compra c INNER JOIN detalle_compra d ON c.compra_id = d.compra_compra_id INNER JOIN producto p ON d.producto_producto_id = p.producto_id
+                 WHERE p.usuario_id = $usuario_id AND c.fecha >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) GROUP BY DATE(c.fecha)";
+
+    // Top Productos (Vendedor)
+    $qTop = "SELECT p.nombre, p.imagen as img, SUM(d.cantidad) as total_vendido
+             FROM detalle_compra d INNER JOIN producto p ON d.producto_producto_id = p.producto_id
+             WHERE p.usuario_id = $usuario_id GROUP BY p.producto_id ORDER BY total_vendido DESC LIMIT 8";
+}
+
 $fecha_hoy = date('Y-m-d');
 
-
 // ==========================================
-// DATOS PARA LA GRÁFICA (Últimos 7 días)
+// PROCESAR GRÁFICA Y TOP PRODUCTOS
 // ==========================================
 $fechas_grafica = [];
 $ventas_grafica_temp = [];
@@ -104,12 +156,6 @@ for ($i = 6; $i >= 0; $i--) {
     $ventas_grafica_temp[$dateString] = 0;
 }
 
-$qGrafica = "SELECT DATE(c.fecha) as dia, COUNT(DISTINCT c.compra_id) as total_ventas 
-             FROM compra c
-             INNER JOIN detalle_compra d ON c.compra_id = d.compra_compra_id
-             INNER JOIN producto p ON d.producto_producto_id = p.producto_id
-             WHERE p.vendedor_id = $usuario_id AND c.fecha >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) 
-             GROUP BY DATE(c.fecha)";
 $resGrafica = $conn->query($qGrafica);
 if ($resGrafica) {
     while ($row = $resGrafica->fetch_assoc()) {
@@ -118,24 +164,14 @@ if ($resGrafica) {
 }
 $ventas_grafica = array_values($ventas_grafica_temp);
 
-
-// ==========================================
-// PRODUCTOS MÁS VENDIDOS (Top 8 histórico de ESTE vendedor)
-// ==========================================
 $productos_top = [];
 try {
-    $qTop = "SELECT p.nombre, p.imagen as img, SUM(d.cantidad) as total_vendido
-             FROM detalle_compra d
-             INNER JOIN producto p ON d.producto_producto_id = p.producto_id
-             WHERE p.vendedor_id = $usuario_id
-             GROUP BY p.producto_id
-             ORDER BY total_vendido DESC
-             LIMIT 8";
     $resTop = $conn->query($qTop);
     if ($resTop) {
         $productos_top = $resTop->fetch_all(MYSQLI_ASSOC);
     }
-} catch (mysqli_sql_exception $e) {}
+} catch (mysqli_sql_exception $e) {
+}
 
 ?>
 
@@ -146,7 +182,7 @@ try {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Dashboard – Raíz Viva</title>
-    <link rel="stylesheet" href="Assets/styles/global.css">
+    <link rel="stylesheet" href="Assets/styles/global.css?v=2">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .dash-container {
@@ -343,37 +379,93 @@ try {
 
     <header class="topbar">
         <div class="topbar__inner">
-            <a class="brand" href="index.php"><img src="Assets/img/logo.png" alt="Raíz Viva"></a>
+            <a class="brand" href="index.php">
+                <img src="Assets/img/logo.png" alt="Raíz Viva" />
+            </a>
 
             <div class="nav-dropdown">
-                <button class="nav-dropbtn">Productos
-                    <svg viewBox="0 0 24 24" width="16" height="16">
-                        <path d="M6 9l6 6 6-6" stroke="currentColor" fill="none" stroke-width="2"></path>
+                <button class="nav-dropbtn" id="btnProductos" aria-haspopup="true" aria-expanded="false"
+                    aria-controls="menuProductos">
+                    Productos
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" />
                     </svg>
                 </button>
-                <nav class="nav-menu" hidden></nav>
+
+                <!-- Menú de categorías -->
+                <nav class="nav-menu" id="menuProductos" role="menu" hidden>
+                    <a role="menuitem" href="productos.php?cat=1" class="nav-menu__item">
+                        Plantas de interior
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=2" class="nav-menu__item">
+                        Plantas de exterior
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=3" class="nav-menu__item">
+                        Bajo mantenimiento
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=4" class="nav-menu__item">
+                        Aromáticas y comestibles
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=5" class="nav-menu__item">
+                        Macetas y accesorios
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=6" class="nav-menu__item">
+                        Cuidados y bienestar
+                    </a>
+                </nav>
             </div>
 
-            <form class="search" role="search">
-                <input type="search" placeholder="Buscar productos">
-                <button type="submit">
+            <form action="productos.php" method="GET" class="search" role="search">
+                <input type="search" name="search" placeholder="Buscar" aria-label="Buscar"
+                    value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+                <button type="submit" aria-label="Buscar">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#586a58" stroke-width="2">
-                        <circle cx="11" cy="11" r="7"></circle>
-                        <path d="m20 20-3.5-3.5"></path>
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="m20 20-3.5-3.5" />
                     </svg>
                 </button>
             </form>
 
             <div class="actions">
-                <a href="mi-cuenta.php" class="action">
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="#fff" fill="none" stroke-width="2">
-                        <path d="M20 21a8 8 0 1 0-16 0"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                    <span>Mi cuenta</span>
-                </a>
+
+                <?php if ($logged): ?>
+                    <a href="mi-cuenta.php" class="action">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+                            <path d="M20 21a8 8 0 1 0-16 0" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <span>
+                            <?php
+                            // Si existe el nombre en sesión, extraemos solo el primer nombre
+                            if (isset($_SESSION['nombre']) && !empty($_SESSION['nombre'])) {
+                                $primerNombre = explode(' ', trim($_SESSION['nombre']))[0];
+                                // Ponemos la primera letra en mayúscula
+                                echo htmlspecialchars(ucfirst(strtolower($primerNombre)));
+                            } else {
+                                echo 'Mi cuenta';
+                            }
+                            ?>
+                        </span>
+                    </a>
+                <?php else: ?>
+                    <a href="login.php" class="action">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+                            <path d="M20 21a8 8 0 1 0-16 0" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <span>Ingresar</span>
+                    </a>
+                <?php endif; ?>
+
+
                 <a href="carrito.php" class="action">
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="#fff" fill="none" stroke-width="2">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
                         <circle cx="10" cy="20" r="1"></circle>
                         <circle cx="18" cy="20" r="1"></circle>
                         <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6"></path>
@@ -489,7 +581,8 @@ try {
                     <input type="date" id="fecha-ventas" class="date-input" value="<?php echo $fecha_hoy; ?>"
                         style="cursor: pointer;">
                     <div id="valor-ventas-dia" class="daily-value" style="transition: opacity 0.3s ease;">
-                        <?php echo $ventas_hoy; ?></div>
+                        <?php echo $ventas_hoy; ?>
+                    </div>
                 </div>
 
                 <a href="reportes.php" class="btn-reportes">

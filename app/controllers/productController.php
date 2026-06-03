@@ -24,18 +24,11 @@ class ProductController
         $conn = $this->connection->connect();
 
         if ($categoria_id) {
-            $query = "SELECT p.*
-                      FROM producto p
-                      WHERE p.estado = 'activo'
-                        AND p.categoria_categoria_id = ?
-                      ORDER BY p.producto_id DESC";
+            $query = "SELECT p.* FROM producto p WHERE p.estado = 'activo' AND p.categoria_categoria_id = ? ORDER BY (p.stock = 0), p.producto_id DESC";
             $stmt = $conn->prepare($query);
             $stmt->bind_param("i", $categoria_id);
         } else {
-            $query = "SELECT p.*
-                      FROM producto p
-                      WHERE p.estado = 'activo'
-                      ORDER BY p.producto_id DESC";
+            $query = "SELECT p.* FROM producto p WHERE p.estado = 'activo' ORDER BY (p.stock = 0), p.producto_id DESC";
             $stmt = $conn->prepare($query);
         }
 
@@ -70,21 +63,11 @@ class ProductController
         $like = "%" . $texto . "%";
 
         if ($categoria_id) {
-            $query = "SELECT * FROM producto
-                  WHERE estado = 'activo'
-                    AND categoria_categoria_id = ?
-                    AND (nombre LIKE ? OR descripcion LIKE ?)
-                  ORDER BY producto_id DESC";
-
+            $query = "SELECT * FROM producto WHERE estado = 'activo' AND categoria_categoria_id = ? AND (nombre LIKE ? OR descripcion LIKE ?) ORDER BY (stock = 0), producto_id DESC";
             $stmt = $conn->prepare($query);
             $stmt->bind_param("iss", $categoria_id, $like, $like);
-
         } else {
-            $query = "SELECT * FROM producto
-                  WHERE estado = 'activo'
-                    AND (nombre LIKE ? OR descripcion LIKE ?)
-                  ORDER BY producto_id DESC";
-
+            $query = "SELECT * FROM producto WHERE estado = 'activo' AND (nombre LIKE ? OR descripcion LIKE ?) ORDER BY (stock = 0), producto_id DESC";
             $stmt = $conn->prepare($query);
             $stmt->bind_param("ss", $like, $like);
         }

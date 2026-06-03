@@ -18,10 +18,17 @@ $usuario_id = (int) $_SESSION['usuario_id'];
 // Productos del carrito
 $items = $cart->getCartItems($usuario_id);
 
-// Total
+// INICIALIZAMOS TOTAL Y LA ALARMA DE STOCK
 $total = 0;
+$hayErrorStock = false;
+
 foreach ($items as $item) {
     $total += $item['precio'] * $item['cantidad'];
+    
+    // VALIDACIÓN DE SEGURIDAD: Si no hay stock o piden más de lo disponible
+    if ($item['cantidad'] > $item['stock'] || $item['cantidad'] <= 0 || $item['stock'] <= 0) {
+        $hayErrorStock = true;
+    }
 }
 
 // Datos para header
@@ -36,13 +43,12 @@ $cartCount = $cart->getCartCount($usuario_id);
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Carrito – Raíz Viva</title>
 
-    <link rel="stylesheet" href="Assets/styles/global.css" />
+    <link rel="stylesheet" href="Assets/styles/global.css?v=2" />
     <link rel="stylesheet" href="Assets/styles/cart.css" />
 </head>
 
 <body>
 
-    <!-- Header  -->
     <header class="topbar">
         <div class="topbar__inner">
             <a class="brand" href="index.php">
@@ -50,24 +56,45 @@ $cartCount = $cart->getCartCount($usuario_id);
             </a>
 
             <div class="nav-dropdown">
-                <button class="nav-dropbtn">Productos
+                <button class="nav-dropbtn" id="btnProductos" aria-haspopup="true" aria-expanded="false"
+                    aria-controls="menuProductos">
+                    Productos
                     <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
                         <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" />
                     </svg>
                 </button>
-                <nav class="nav-menu" hidden>
-                    <a class="nav-menu__item" href="productos.php?cat=1">Plantas de interior</a>
-                    <a class="nav-menu__item" href="productos.php?cat=2">Plantas de exterior</a>
-                    <a class="nav-menu__item" href="productos.php?cat=3">Bajo mantenimiento</a>
-                    <a class="nav-menu__item" href="productos.php?cat=4">Aromáticas y comestibles</a>
-                    <a class="nav-menu__item" href="productos.php?cat=5">Macetas y accesorios</a>
-                    <a class="nav-menu__item" href="productos.php?cat=6">Cuidados y bienestar</a>
+
+                <nav class="nav-menu" id="menuProductos" role="menu" hidden>
+                    <a role="menuitem" href="productos.php?cat=1" class="nav-menu__item">
+                        Plantas de interior
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=2" class="nav-menu__item">
+                        Plantas de exterior
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=3" class="nav-menu__item">
+                        Bajo mantenimiento
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=4" class="nav-menu__item">
+                        Aromáticas y comestibles
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=5" class="nav-menu__item">
+                        Macetas y accesorios
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=6" class="nav-menu__item">
+                        Cuidados y bienestar
+                    </a>
                 </nav>
             </div>
 
-            <form class="search" role="search">
-                <input type="search" placeholder="Buscar" aria-label="Buscar productos" />
+            <form action="productos.php" method="GET" class="search" role="search">
+                <input type="search" name="search" placeholder="Buscar" aria-label="Buscar"
+                    value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
                 <button type="submit" aria-label="Buscar">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#586a58" stroke-width="2">
                         <circle cx="11" cy="11" r="7" />
@@ -77,13 +104,25 @@ $cartCount = $cart->getCartCount($usuario_id);
             </form>
 
             <div class="actions">
+
                 <?php if ($logged): ?>
                     <a href="mi-cuenta.php" class="action">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
                             <path d="M20 21a8 8 0 1 0-16 0" />
                             <circle cx="12" cy="7" r="4" />
                         </svg>
-                        <span>Mi cuenta</span>
+                        <span>
+                            <?php
+                            // Si existe el nombre en sesión, extraemos solo el primer nombre
+                            if (isset($_SESSION['nombre']) && !empty($_SESSION['nombre'])) {
+                                $primerNombre = explode(' ', trim($_SESSION['nombre']))[0];
+                                // Ponemos la primera letra en mayúscula
+                                echo htmlspecialchars(ucfirst(strtolower($primerNombre)));
+                            } else {
+                                echo 'Mi cuenta';
+                            }
+                            ?>
+                        </span>
                     </a>
                 <?php else: ?>
                     <a href="login.php" class="action">
@@ -95,11 +134,12 @@ $cartCount = $cart->getCartCount($usuario_id);
                     </a>
                 <?php endif; ?>
 
+
                 <a href="carrito.php" class="action">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                        <circle cx="10" cy="20" r="1" />
-                        <circle cx="18" cy="20" r="1" />
-                        <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6" />
+                        <circle cx="10" cy="20" r="1"></circle>
+                        <circle cx="18" cy="20" r="1"></circle>
+                        <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6"></path>
                     </svg>
                     <span><?php echo $cartCount; ?></span>
                 </a>
@@ -128,12 +168,11 @@ $cartCount = $cart->getCartCount($usuario_id);
 
         <?php else: ?>
 
-            <!-- Lista de ítems -->
             <section class="cart-list" aria-label="Productos en el carrito">
 
                 <?php foreach ($items as $item): ?>
                     <?php
-                    $subtotal = $item['precio'] * $item['cantidad'];
+                    $subtotal_item = $item['precio'] * $item['cantidad'];
                     $img = !empty($item['imagen']) ? $item['imagen'] : 'Assets/img/placeholder.jpg';
                     ?>
                     <article class="cart-item">
@@ -161,6 +200,16 @@ $cartCount = $cart->getCartCount($usuario_id);
                                         value="<?php echo (int) $item['cantidad']; ?>" min="1"
                                         max="<?php echo (int) $item['stock']; ?>" aria-label="Cantidad" style="width: 60px;" />
                                 </div>
+                                
+                                <?php if ($item['cantidad'] > $item['stock'] && $item['stock'] > 0): ?>
+                                    <p style="color: #e74c3c; font-size: 11px; margin-top: 6px; font-weight: bold; max-width: 120px;">
+                                        Solo <?php echo $item['stock']; ?> disp.
+                                    </p>
+                                <?php elseif ($item['stock'] <= 0): ?>
+                                    <p style="color: #e74c3c; font-size: 11px; margin-top: 6px; font-weight: bold; max-width: 120px;">
+                                        Agotado.
+                                    </p>
+                                <?php endif; ?>
                             </form>
                         </div>
 
@@ -171,7 +220,7 @@ $cartCount = $cart->getCartCount($usuario_id);
 
                         <div class="cart-subtotal">
                             <p class="cart-label">Subtotal:</p>
-                            <p class="cart-value">$<?php echo number_format($subtotal, 2); ?></p>
+                            <p class="cart-value">$<?php echo number_format($subtotal_item, 2); ?></p>
                         </div>
 
                         <form action="app/controllers/cartController.php" method="POST">
@@ -185,7 +234,6 @@ $cartCount = $cart->getCartCount($usuario_id);
                 <?php endforeach; ?>
             </section>
 
-            <!-- Acciones inferiores -->
             <section class="cart-actions">
                 <div class="cart-actions__left">
                     <form action="app/controllers/cartController.php" method="POST" style="display:inline-block">
@@ -196,12 +244,15 @@ $cartCount = $cart->getCartCount($usuario_id);
                     <a href="productos.php" class="btn-outline">Seguir comprando</a>
                 </div>
 
-                <div class="cart-actions__right">
-                    <div class="cart-total">
-                        <span>Total:</span>
-                        <strong>$<?php echo number_format($total, 2); ?></strong>
-                    </div>
-                    <a href="confirmar-compra.php" class="btn-buy">Comprar ahora</a>
+                <div class="cart-summary">
+                    <span class="total-label">Total: <strong>$<?php echo number_format($total, 2); ?></strong></span>
+
+                    <?php if ($total > 0 && !$hayErrorStock): ?>
+                        <a href="confirmar-compra.php" class="btn-comprar">Comprar ahora</a>
+                    <?php else: ?>
+                        <button class="btn-comprar" style="background-color: #ccc; cursor: not-allowed;" disabled
+                            title="Corrige los errores de stock en rojo antes de continuar">Comprar ahora</button>
+                    <?php endif; ?>
                 </div>
             </section>
 

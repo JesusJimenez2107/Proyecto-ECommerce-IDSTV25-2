@@ -52,7 +52,7 @@ $telefono_envio = $_POST['telefono'] ?? '';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Detalles de Pago – Raíz Viva</title>
-    <link rel="stylesheet" href="Assets/styles/global.css" />
+    <link rel="stylesheet" href="Assets/styles/global.css?v=2" />
     <link rel="stylesheet" href="Assets/styles/checkout.css" />
     <style>
         /* Estilos generales de layout */

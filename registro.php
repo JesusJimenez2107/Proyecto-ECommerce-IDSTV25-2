@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro – Raíz Viva</title>
     <link rel="stylesheet" href="Assets/styles/styles.css">
 </head>
+
 <body>
     <main class="login-container">
 
@@ -35,19 +37,25 @@
             <form action="app/controllers/usersController.php" method="POST" onsubmit="return validateRegister()">
 
                 <label for="nombre">Nombre(s)</label>
-                <input type="text" id="nombre" name="nombre" placeholder="Nombre(s)" required>
+                <input type="text" id="nombre" name="nombre" placeholder="Nombre(s)" required maxlength="100">
 
                 <label for="apellidos">Apellido(s)</label>
-                <input type="text" id="apellidos" name="apellidos" placeholder="Apellido(s)" required>
+                <input type="text" id="apellidos" name="apellidos" placeholder="Apellido(s)" required maxlength="100">
 
                 <label for="correo">Correo</label>
-                <input type="email" id="correo" name="correo" placeholder="Correo" required>
+                <input type="email" id="correo" name="correo" placeholder="Correo" required maxlength="100">
 
-                <label for="password">Contraseña</label>
-                <input type="password" id="password" name="password" placeholder="Contraseña" required>
+                <label for="password">Contraseña (Mín. 8 caracteres)</label>
+                <input type="password" id="password" name="password" placeholder="Contraseña" required minlength="8"
+                    oninvalid="this.setCustomValidity('La contraseña debe tener al menos 8 caracteres.')"
+                    oninput="this.setCustomValidity('')">
+
+                <label for="confirm_password">Confirmar Contraseña</label>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Repite tu contraseña"
+                    required>
 
                 <label for="direccion">Dirección</label>
-                <input type="text" id="direccion" name="direccion" placeholder="Dirección" required>
+                <input type="text" id="direccion" name="direccion" placeholder="Dirección" required maxlength="255">
 
                 <label for="telefono">Teléfono</label>
                 <input type="text" id="telefono" name="telefono" placeholder="Teléfono" required>
@@ -57,7 +65,7 @@
                 <button type="submit">REGISTRARSE</button>
 
                 <input type="hidden" name="action" value="create_user">
-                
+
             </form>
 
         </section>
@@ -69,4 +77,5 @@
 
         <script src="./Assets/js/validaciones.js"></script>
 </body>
+
 </html>

@@ -160,7 +160,7 @@ class CartController
         $stmt->execute();
     }
 
-    // FINALIZAR COMPRA Y PROCESAR PAGO
+    // FINALIZAR COMPRA Y PROCESAR PAGO (Con reducción de stock manual)
     public function checkout($usuario_id, $nombre, $direccion, $ciudad, $telefono, $correo, $titular, $tarjeta, $dir_facturacion, $ciudad_fact, $cp_fact, $pais_fact)
     {
         $conn = $this->connection->connect();
@@ -204,7 +204,6 @@ class CartController
                     (total, nombre_envio, direccion_envio, ciudad_envio, telefono_envio, usuario_usuario_id)
                     VALUES (?, ?, ?, ?, ?, ?)";
             $stmtCompra = $conn->prepare($qCompra);
-            // Usamos "s" para el total para evitar problemas de casting en DECIMAL/FLOAT
             $stmtCompra->bind_param(
                 "sssssi",
                 $total,
@@ -217,11 +216,14 @@ class CartController
             $stmtCompra->execute();
             $compra_id = $conn->insert_id;
 
-            // 5) Insertar detalles (Tus triggers en BD descontarán el stock automáticamente)
+            // 5) Insertar detalles Y REDUCIR STOCK
             $qDetalle = "INSERT INTO detalle_compra
                         (cantidad, precio_unitario, subtotal, compra_compra_id, producto_producto_id)
                      VALUES (?, ?, ?, ?, ?)";
             $stmtDetalle = $conn->prepare($qDetalle);
+
+            $qReduceStock = "UPDATE producto SET stock = stock - ? WHERE producto_id = ?";
+            $stmtReduceStock = $conn->prepare($qReduceStock);
 
             foreach ($items as $item) {
                 $cantidad = (int) $item['cantidad'];
@@ -229,16 +231,13 @@ class CartController
                 $subtotal = $cantidad * $precio;
                 $producto_id = (int) $item['producto_id'];
 
-                // Usamos 's' para los decimales (precio y subtotal) para mayor seguridad
-                $stmtDetalle->bind_param(
-                    "issii",
-                    $cantidad,
-                    $precio,
-                    $subtotal,
-                    $compra_id,
-                    $producto_id
-                );
+                // a) Guardar el detalle de la compra
+                $stmtDetalle->bind_param("issii", $cantidad, $precio, $subtotal, $compra_id, $producto_id);
                 $stmtDetalle->execute();
+
+                // b) Reducir el stock del producto
+                $stmtReduceStock->bind_param("ii", $cantidad, $producto_id);
+                $stmtReduceStock->execute();
             }
 
             // 6) Registrar el Pago en la nueva tabla
@@ -279,6 +278,8 @@ class CartController
 
 }
 
+
+
 /* ===========================
  * ROUTER: acciones por POST
  * =========================== */
@@ -311,6 +312,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         header("Location: " . $redirect);
         exit;
+        
     } elseif ($action === 'remove_item') {
 
         $carrito_id = isset($_POST['carrito_id']) ? (int) $_POST['carrito_id'] : 0;
@@ -325,6 +327,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         header("Location: ../../carrito.php?msg=cleared");
         exit;
+        
     } elseif ($action === 'update_qty') {
 
         $carrito_id = isset($_POST['carrito_id']) ? (int) $_POST['carrito_id'] : 0;
@@ -334,6 +337,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         header("Location: ../../carrito.php?msg=updated");
         exit;
+        
     } elseif ($action === 'checkout') {
 
         // 1. Datos de envío (vienen ocultos desde la vista de pago)
@@ -375,6 +379,49 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         } else {
             header("Location: ../../pago.php?msg=error");
         }
+        exit;
+
+    } elseif ($action === 'cancel_order') {
+        
+        $compra_id = isset($_POST['compra_id']) ? (int) $_POST['compra_id'] : 0;
+        $conn = (new ConnectionController())->connect();
+
+        // 1. Obtener los detalles de la compra para recuperar las cantidades
+        $queryDetalles = "SELECT producto_producto_id, cantidad FROM detalle_compra WHERE compra_compra_id = ?";
+        $stmtDetalles = $conn->prepare($queryDetalles);
+        $stmtDetalles->bind_param("i", $compra_id);
+        $stmtDetalles->execute();
+        $resultado = $stmtDetalles->get_result();
+        
+        // 2. Restaurar el stock de cada producto devolviéndolo al inventario
+        $queryRestaurar = "UPDATE producto SET stock = stock + ? WHERE producto_id = ?";
+        $stmtRestaurar = $conn->prepare($queryRestaurar);
+        
+        while ($fila = $resultado->fetch_assoc()) {
+            $stmtRestaurar->bind_param("ii", $fila['cantidad'], $fila['producto_producto_id']);
+            $stmtRestaurar->execute();
+        }
+
+        // 3. Eliminar el registro del pago (Llave foránea hacia compra)
+        $qBorrarPago = "DELETE FROM pago WHERE compra_compra_id = ?";
+        $stmtBorrarPago = $conn->prepare($qBorrarPago);
+        $stmtBorrarPago->bind_param("i", $compra_id);
+        $stmtBorrarPago->execute();
+
+        // 4. Eliminar los detalles de la compra (Llave foránea hacia compra)
+        $qBorrarDetalles = "DELETE FROM detalle_compra WHERE compra_compra_id = ?";
+        $stmtBorrarDetalles = $conn->prepare($qBorrarDetalles);
+        $stmtBorrarDetalles->bind_param("i", $compra_id);
+        $stmtBorrarDetalles->execute();
+
+        // 5. Eliminar la compra general de este usuario
+        $qBorrarCompra = "DELETE FROM compra WHERE compra_id = ? AND usuario_usuario_id = ?";
+        $stmtBorrarCompra = $conn->prepare($qBorrarCompra);
+        $stmtBorrarCompra->bind_param("ii", $compra_id, $usuario_id);
+        $stmtBorrarCompra->execute();
+
+        // Redirigir de vuelta a mis compras con un mensaje de éxito
+        header("Location: ../../mis-compras.php?msg=canceled");
         exit;
     }
 }

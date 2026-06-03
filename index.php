@@ -19,7 +19,7 @@ if (isset($_SESSION['usuario_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Raíz Viva – Inicio</title>
-    <link rel="stylesheet" href="Assets/styles/global.css" />
+    <link rel="stylesheet" href="Assets/styles/global.css?v=2" />
     <link rel="stylesheet" href="Assets/styles/home.css">
 </head>
 
@@ -68,10 +68,10 @@ if (isset($_SESSION['usuario_id'])) {
                 </nav>
             </div>
 
-            <form class="search" role="search">
-                <input type="search" placeholder="Buscar" aria-label="Buscar">
+            <form action="productos.php" method="GET" class="search" role="search">
+                <input type="search" name="search" placeholder="Buscar" aria-label="Buscar"
+                    value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
                 <button type="submit" aria-label="Buscar">
-                    <!-- lupa -->
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#586a58" stroke-width="2">
                         <circle cx="11" cy="11" r="7" />
                         <path d="m20 20-3.5-3.5" />
@@ -87,7 +87,18 @@ if (isset($_SESSION['usuario_id'])) {
                             <path d="M20 21a8 8 0 1 0-16 0" />
                             <circle cx="12" cy="7" r="4" />
                         </svg>
-                        <span>Mi cuenta</span>
+                        <span>
+                            <?php
+                            // Si existe el nombre en sesión, extraemos solo el primer nombre
+                            if (isset($_SESSION['nombre']) && !empty($_SESSION['nombre'])) {
+                                $primerNombre = explode(' ', trim($_SESSION['nombre']))[0];
+                                // Ponemos la primera letra en mayúscula
+                                echo htmlspecialchars(ucfirst(strtolower($primerNombre)));
+                            } else {
+                                echo 'Mi cuenta';
+                            }
+                            ?>
+                        </span>
                     </a>
                 <?php else: ?>
                     <a href="login.php" class="action">

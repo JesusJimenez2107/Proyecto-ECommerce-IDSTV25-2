@@ -218,9 +218,6 @@ $stmtItems->close();
 
     <div class="ticket">
         <div class="ticket-header">
-            <!-- Puedes usar también:
-                 <img src="Assets/img/logo.png" alt="Raíz Viva" height="40">
-            -->
             <h1>Raíz Viva</h1>
             <small>Ticket de compra #<?php echo $compra['compra_id']; ?></small><br>
             <small>Fecha: <?php echo $fechaCompra; ?></small>

@@ -1,12 +1,12 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
-  session_start();
+    session_start();
 }
 
 // Debe estar logueado
 if (!isset($_SESSION['usuario_id'])) {
-  header("Location: login.php?error=login_required");
-  exit;
+    header("Location: login.php?error=login_required");
+    exit;
 }
 
 require_once "app/config/connectionController.php";
@@ -15,13 +15,15 @@ require_once "app/controllers/cartController.php";
 $conn = (new ConnectionController())->connect();
 
 $usuario_id = (int) $_SESSION['usuario_id'];
+// Identificar si es administrador
+$isAdmin = (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin');
 
 // Para el header
 $logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
 $cartCount = 0;
 if ($logged) {
-  $cartCtrl = new CartController();
-  $cartCount = $cartCtrl->getCartCount($usuario_id);
+    $cartCtrl = new CartController();
+    $cartCount = $cartCtrl->getCartCount($usuario_id);
 }
 
 // --------- Parámetros de filtro ---------
@@ -36,81 +38,85 @@ $rows = [];
 $title = '';
 $totalPeriodo = 0.0;
 
-// --------- Consultas según el tipo ---------
+// --------- Consultas Híbridas (Admin vs Vendedor) ---------
+
 if ($tipo === 'ventas') {
-
-  $title = "Ventas";
-  $sql = "SELECT 
-                c.fecha,
-                c.compra_id,
-                u.nombre AS cliente,
-                c.total
-            FROM compra c
-            INNER JOIN usuario u 
-                ON c.usuario_usuario_id = u.usuario_id
-            WHERE c.fecha BETWEEN ? AND ?
-              AND c.usuario_usuario_id = ?
-            ORDER BY c.fecha DESC";
-
-  $stmt = $conn->prepare($sql);
-  $stmt->bind_param("ssi", $inicioParam, $finParam, $usuario_id);
+    if ($isAdmin) {
+        $title = "Ventas Globales";
+        $sql = "SELECT c.fecha, c.compra_id, u.nombre AS cliente, c.total
+                FROM compra c
+                INNER JOIN usuario u ON c.usuario_usuario_id = u.usuario_id
+                WHERE c.fecha BETWEEN ? AND ?
+                ORDER BY c.fecha DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ss", $inicioParam, $finParam);
+    } else {
+        $title = "Mis Ventas";
+        $sql = "SELECT c.fecha, c.compra_id, u.nombre AS cliente, SUM(d.subtotal) AS total
+                FROM compra c
+                INNER JOIN usuario u ON c.usuario_usuario_id = u.usuario_id
+                INNER JOIN detalle_compra d ON c.compra_id = d.compra_compra_id
+                INNER JOIN producto p ON d.producto_producto_id = p.producto_id
+                WHERE c.fecha BETWEEN ? AND ? AND p.usuario_id = ?
+                GROUP BY c.compra_id, c.fecha, u.nombre
+                ORDER BY c.fecha DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ssi", $inicioParam, $finParam, $usuario_id);
+    }
 
 } elseif ($tipo === 'productos') {
-
-  $title = "Productos más vendidos";
-  $sql = "SELECT 
-                p.nombre,
-                SUM(d.cantidad) AS unidades_vendidas,
-                SUM(d.subtotal) AS total_vendido
-            FROM compra c
-            INNER JOIN detalle_compra d 
-                ON d.compra_compra_id = c.compra_id
-            INNER JOIN producto p 
-                ON d.producto_producto_id = p.producto_id
-            WHERE c.fecha BETWEEN ? AND ?
-              AND p.usuario_id = ?
-            GROUP BY p.producto_id, p.nombre
-            ORDER BY unidades_vendidas DESC";
-
-  $stmt = $conn->prepare($sql);
-  $stmt->bind_param("ssi", $inicioParam, $finParam, $usuario_id);
+    if ($isAdmin) {
+        $title = "Productos más vendidos (Global)";
+        $sql = "SELECT p.nombre, SUM(d.cantidad) AS unidades_vendidas, SUM(d.subtotal) AS total_vendido
+                FROM compra c
+                INNER JOIN detalle_compra d ON d.compra_compra_id = c.compra_id
+                INNER JOIN producto p ON d.producto_producto_id = p.producto_id
+                WHERE c.fecha BETWEEN ? AND ?
+                GROUP BY p.producto_id, p.nombre
+                ORDER BY unidades_vendidas DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ss", $inicioParam, $finParam);
+    } else {
+        $title = "Mis Productos más vendidos";
+        $sql = "SELECT p.nombre, SUM(d.cantidad) AS unidades_vendidas, SUM(d.subtotal) AS total_vendido
+                FROM compra c
+                INNER JOIN detalle_compra d ON d.compra_compra_id = c.compra_id
+                INNER JOIN producto p ON d.producto_producto_id = p.producto_id
+                WHERE c.fecha BETWEEN ? AND ? AND p.usuario_id = ?
+                GROUP BY p.producto_id, p.nombre
+                ORDER BY unidades_vendidas DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ssi", $inicioParam, $finParam, $usuario_id);
+    }
 
 } elseif ($tipo === 'clientes') {
-
-  $title = "Clientes con más compras";
-  $sql = "SELECT 
-                u.nombre AS cliente,
-                COUNT(c.compra_id) AS num_compras,
-                SUM(c.total)       AS total_gastado
-            FROM compra c
-            INNER JOIN usuario u 
-                ON c.usuario_usuario_id = u.usuario_id
-            WHERE c.fecha BETWEEN ? AND ?
-            GROUP BY u.usuario_id, u.nombre
-            ORDER BY total_gastado DESC";
-
-  $stmt = $conn->prepare($sql);
-  $stmt->bind_param("ss", $inicioParam, $finParam);
-
+    if ($isAdmin) {
+        $title = "Clientes VIP (Global)";
+        $sql = "SELECT u.nombre AS cliente, COUNT(c.compra_id) AS num_compras, SUM(c.total) AS total_gastado
+                FROM compra c
+                INNER JOIN usuario u ON c.usuario_usuario_id = u.usuario_id
+                WHERE c.fecha BETWEEN ? AND ?
+                GROUP BY u.usuario_id, u.nombre
+                ORDER BY total_gastado DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ss", $inicioParam, $finParam);
+    } else {
+        $title = "Mis Mejores Clientes";
+        $sql = "SELECT u.nombre AS cliente, COUNT(DISTINCT c.compra_id) AS num_compras, SUM(d.subtotal) AS total_gastado
+                FROM compra c
+                INNER JOIN usuario u ON c.usuario_usuario_id = u.usuario_id
+                INNER JOIN detalle_compra d ON c.compra_id = d.compra_compra_id
+                INNER JOIN producto p ON d.producto_producto_id = p.producto_id
+                WHERE c.fecha BETWEEN ? AND ? AND p.usuario_id = ?
+                GROUP BY u.usuario_id, u.nombre
+                ORDER BY total_gastado DESC";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ssi", $inicioParam, $finParam, $usuario_id);
+    }
 } else {
-  // fallback
-  $tipo = 'ventas';
-  $title = "Ventas";
-
-  $sql = "SELECT 
-                c.fecha,
-                c.compra_id,
-                u.nombre AS cliente,
-                c.total
-            FROM compra c
-            INNER JOIN usuario u 
-                ON c.usuario_usuario_id = u.usuario_id
-            WHERE c.fecha BETWEEN ? AND ?
-              AND c.usuario_usuario_id = ?
-            ORDER BY c.fecha DESC";
-
-  $stmt = $conn->prepare($sql);
-  $stmt->bind_param("ssi", $inicioParam, $finParam, $usuario_id);
+    // fallback
+    header("Location: reportes.php");
+    exit;
 }
 
 // Ejecutamos
@@ -118,15 +124,15 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 while ($r = $result->fetch_assoc()) {
-  $rows[] = $r;
+    $rows[] = $r;
 
-  if ($tipo === 'ventas') {
-    $totalPeriodo += (float) $r['total'];
-  } elseif ($tipo === 'productos') {
-    $totalPeriodo += (float) $r['total_vendido'];
-  } elseif ($tipo === 'clientes') {
-    $totalPeriodo += (float) $r['total_gastado'];
-  }
+    if ($tipo === 'ventas') {
+        $totalPeriodo += (float) $r['total'];
+    } elseif ($tipo === 'productos') {
+        $totalPeriodo += (float) $r['total_vendido'];
+    } elseif ($tipo === 'clientes') {
+        $totalPeriodo += (float) $r['total_gastado'];
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -137,72 +143,105 @@ while ($r = $result->fetch_assoc()) {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Reportes – Raíz Viva</title>
 
-  <link rel="stylesheet" href="Assets/styles/global.css" />
+  <link rel="stylesheet" href="Assets/styles/global.css?v=2" />
   <link rel="stylesheet" href="Assets/styles/reportes.css" />
 </head>
 
 <body>
-  <!-- Topbar global -->
   <header class="topbar">
-    <div class="topbar__inner">
-      <a class="brand" href="index.php"><img src="Assets/img/logo.png" alt="Raíz Viva" /></a>
+        <div class="topbar__inner">
+            <a class="brand" href="index.php">
+                <img src="Assets/img/logo.png" alt="Raíz Viva" />
+            </a>
 
-      <div class="nav-dropdown">
-        <button class="nav-dropbtn">Productos
-          <svg viewBox="0 0 24 24" width="16" height="16">
-            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-          </svg>
-        </button>
-        <nav class="nav-menu" hidden>
-          <a class="nav-menu__item" href="productos.php?cat=1">Plantas de interior</a>
-          <a class="nav-menu__item" href="productos.php?cat=2">Plantas de exterior</a>
-          <a class="nav-menu__item" href="productos.php?cat=3">Bajo mantenimiento</a>
-          <a class="nav-menu__item" href="productos.php?cat=4">Aromáticas y comestibles</a>
-          <a class="nav-menu__item" href="productos.php?cat=5">Macetas y accesorios</a>
-          <a class="nav-menu__item" href="productos.php?cat=6">Cuidados y bienestar</a>
-        </nav>
-      </div>
+            <div class="nav-dropdown">
+                <button class="nav-dropbtn" id="btnProductos" aria-haspopup="true" aria-expanded="false"
+                    aria-controls="menuProductos">
+                    Productos
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" />
+                    </svg>
+                </button>
 
-      <form class="search" role="search">
-        <input type="search" placeholder="Buscar" aria-label="Buscar productos" />
-        <button type="submit" aria-label="Buscar">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#586a58" stroke-width="2">
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-3.5-3.5" />
-          </svg>
-        </button>
-      </form>
+                <nav class="nav-menu" id="menuProductos" role="menu" hidden>
+                    <a role="menuitem" href="productos.php?cat=1" class="nav-menu__item">
+                        Plantas de interior
+                    </a>
 
-      <div class="actions">
-        <?php if ($logged): ?>
-          <a href="mi-cuenta.php" class="action">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-              <path d="M20 21a8 8 0 1 0-16 0" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            <span>Mi cuenta</span>
-          </a>
-        <?php else: ?>
-          <a href="login.php" class="action">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-              <path d="M20 21a8 8 0 1 0-16 0" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            <span>Ingresar</span>
-          </a>
-        <?php endif; ?>
+                    <a role="menuitem" href="productos.php?cat=2" class="nav-menu__item">
+                        Plantas de exterior
+                    </a>
 
-        <a href="carrito.php" class="action">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-            <circle cx="10" cy="20" r="1" />
-            <circle cx="18" cy="20" r="1" />
-            <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6" />
-          </svg>
-          <span><?php echo $cartCount; ?></span>
-        </a>
-      </div>
-    </div>
-  </header>
+                    <a role="menuitem" href="productos.php?cat=3" class="nav-menu__item">
+                        Bajo mantenimiento
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=4" class="nav-menu__item">
+                        Aromáticas y comestibles
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=5" class="nav-menu__item">
+                        Macetas y accesorios
+                    </a>
+
+                    <a role="menuitem" href="productos.php?cat=6" class="nav-menu__item">
+                        Cuidados y bienestar
+                    </a>
+                </nav>
+            </div>
+
+            <form action="productos.php" method="GET" class="search" role="search">
+                <input type="search" name="search" placeholder="Buscar" aria-label="Buscar"
+                    value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+                <button type="submit" aria-label="Buscar">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#586a58" stroke-width="2">
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="m20 20-3.5-3.5" />
+                    </svg>
+                </button>
+            </form>
+
+            <div class="actions">
+
+                <?php if ($logged): ?>
+                    <a href="mi-cuenta.php" class="action">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+                            <path d="M20 21a8 8 0 1 0-16 0" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <span>
+                            <?php
+                            if (isset($_SESSION['nombre']) && !empty($_SESSION['nombre'])) {
+                                $primerNombre = explode(' ', trim($_SESSION['nombre']))[0];
+                                echo htmlspecialchars(ucfirst(strtolower($primerNombre)));
+                            } else {
+                                echo 'Mi cuenta';
+                            }
+                            ?>
+                        </span>
+                    </a>
+                <?php else: ?>
+                    <a href="login.php" class="action">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+                            <path d="M20 21a8 8 0 1 0-16 0" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <span>Ingresar</span>
+                    </a>
+                <?php endif; ?>
+
+                <a href="carrito.php" class="action">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
+                        <circle cx="10" cy="20" r="1"></circle>
+                        <circle cx="18" cy="20" r="1"></circle>
+                        <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6"></path>
+                    </svg>
+                    <span><?php echo $cartCount; ?></span>
+                </a>
+            </div>
+        </div>
+    </header>
 
   <main class="page">
     <nav class="breadcrumb" aria-label="Breadcrumb">
@@ -211,7 +250,6 @@ while ($r = $result->fetch_assoc()) {
 
     <h1 class="rp-title">REPORTES</h1>
 
-    <!-- Tabs -->
     <div class="rp-tabs" role="tablist" aria-label="Tipo de reporte">
       <button class="rp-tab <?php echo $tipo === 'ventas' ? 'is-active' : ''; ?>" data-report="ventas" role="tab"
         aria-selected="<?php echo $tipo === 'ventas' ? 'true' : 'false'; ?>">
@@ -229,7 +267,6 @@ while ($r = $result->fetch_assoc()) {
       </button>
     </div>
 
-    <!-- Filtros -->
     <form class="rp-filters" action="reportes.php" method="get" aria-label="Filtrar por periodo">
       <input type="hidden" name="tipo" id="rpTipo" value="<?php echo htmlspecialchars($tipo); ?>" />
 
@@ -251,7 +288,6 @@ while ($r = $result->fetch_assoc()) {
       </div>
     </form>
 
-    <!-- Resultados -->
     <section class="rp-results" aria-live="polite">
       <div class="table-wrap">
         <table class="rp-table">
