@@ -1,29 +1,16 @@
 <?php
+require_once __DIR__ . "/app/config/security.php";
+requireAdmin();
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Solo admins pueden entrar
-if (!isset($_SESSION['usuario_id']) || !isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
-    header("Location: index.php");
-    exit();
-}
-
-$adminId = (int) $_SESSION['usuario_id'];
-
-// Validar id del usuario a consultar
 if (!isset($_GET['id']) || !ctype_digit($_GET['id'])) {
     header("Location: usuarios.php");
     exit();
 }
 $usuarioId = (int) $_GET['id'];
 
-// ================== CONEXIÓN BD ==================
-require_once "app/config/connectionController.php";
+require_once __DIR__ . "/app/config/connectionController.php";
 $conn = (new ConnectionController())->connect();
 
-// ================== OBTENER DATOS DEL USUARIO ==================
 $stmtUser = $conn->prepare(
     "SELECT usuario_id, nombre, apellidos, email, direccion, telefono, rol 
      FROM usuario 
@@ -31,8 +18,7 @@ $stmtUser = $conn->prepare(
 );
 $stmtUser->bind_param("i", $usuarioId);
 $stmtUser->execute();
-$resUser = $stmtUser->get_result();
-$user = $resUser->fetch_assoc();
+$user = $stmtUser->get_result()->fetch_assoc();
 $stmtUser->close();
 
 if (!$user) {
@@ -40,7 +26,6 @@ if (!$user) {
     exit();
 }
 
-// ================== OBTENER COMPRAS DEL USUARIO ==================
 $stmtOrders = $conn->prepare(
     "SELECT compra_id, fecha, total, nombre_envio, direccion_envio, ciudad_envio, telefono_envio
      FROM compra 
@@ -56,23 +41,6 @@ while ($row = $resOrders->fetch_assoc()) {
     $orders[] = $row;
 }
 $stmtOrders->close();
-
-// ====== CONTADOR DEL CARRITO PARA EL HEADER ======
-$logged = isset($_SESSION['email']);
-$cartCount = 0;
-
-if ($logged) {
-    require_once "app/controllers/cartController.php";
-    $cartCtrl = new CartController();
-    $cartCount = $cartCtrl->getCartCount($adminId);
-}
-
-if (!isset($_SESSION['usuario_id']) || !isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
-    header("Location: login.php?error=admin_only");
-    exit();
-}
-
-$adminName = $_SESSION['nombre'] ?? 'Admin';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -86,84 +54,55 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
 </head>
 
 <body>
-    <!-- Header Admin -->
-    <header class="topbar">
-        <div class="topbar__inner">
-            <a href="panel-admin.php" class="brand">
-                <img src="Assets/img/logo.png" alt="Raíz Viva">
-            </a>
-
-            <div class="topbar__admin-center">
-                <span class="topbar__admin-title">Panel de administración</span>
-
-                <nav class="topbar__admin-nav">
-                    <a href="panel-admin.php">Inicio</a>
-                    <a href="usuarios.php">Usuarios</a>
-                    <a href="productos-admin.php">Productos</a>
-                    <a href="reportes-admin.php">Reportes</a>
-                </nav>
-            </div>
-
-            <div class="actions">
-                <span class="action action--text">
-                    <?php echo htmlspecialchars($adminName); ?>
-                </span>
-            </div>
-        </div>
-    </header>
+    <?php require_once "app/views/layouts/header-admin.php"; ?>
 
     <main class="page user-detail-page">
-
-        <!-- Breadcrumb -->
         <nav class="breadcrumb">
             <a href="panel-admin.php">Panel Administración</a> ›
             <a href="usuarios.php">Usuarios</a> ›
             <span>Datos Usuario</span>
         </nav>
 
-        <!-- Datos personales -->
         <section class="user-block">
             <header class="user-block__header">
                 <h1 class="user-block__title">Datos personales</h1>
-
-                <a href="datos-usuario-admin-editar.php?id=<?php echo $user['usuario_id']; ?>"
+                <a href="datos-usuario-admin-editar.php?id=<?php echo (int) $user['usuario_id']; ?>"
                     class="btn btn-secondary">Editar</a>
             </header>
 
             <div class="user-data">
                 <div class="user-field">
                     <span class="user-label">Nombre</span>
-                    <p class="user-value"><?php echo htmlspecialchars($user['nombre']); ?></p>
+                    <p class="user-value"><?php echo htmlspecialchars($user['nombre'], ENT_QUOTES, 'UTF-8'); ?></p>
                 </div>
 
                 <div class="user-field">
                     <span class="user-label">Apellido(s)</span>
-                    <p class="user-value"><?php echo htmlspecialchars($user['apellidos']); ?></p>
+                    <p class="user-value"><?php echo htmlspecialchars($user['apellidos'], ENT_QUOTES, 'UTF-8'); ?></p>
                 </div>
 
                 <div class="user-field">
                     <span class="user-label">Correo</span>
-                    <p class="user-value"><?php echo htmlspecialchars($user['email']); ?></p>
+                    <p class="user-value"><?php echo htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8'); ?></p>
                 </div>
 
                 <div class="user-field">
                     <span class="user-label">Teléfono</span>
-                    <p class="user-value"><?php echo htmlspecialchars($user['telefono']); ?></p>
+                    <p class="user-value"><?php echo htmlspecialchars($user['telefono'], ENT_QUOTES, 'UTF-8'); ?></p>
                 </div>
 
                 <div class="user-field user-field--wide">
                     <span class="user-label">Dirección</span>
-                    <p class="user-value"><?php echo htmlspecialchars($user['direccion']); ?></p>
+                    <p class="user-value"><?php echo htmlspecialchars($user['direccion'], ENT_QUOTES, 'UTF-8'); ?></p>
                 </div>
 
                 <div class="user-field">
                     <span class="user-label">Rol</span>
-                    <p class="user-value"><?php echo ucfirst($user['rol']); ?></p>
+                    <p class="user-value"><?php echo ucfirst(htmlspecialchars($user['rol'], ENT_QUOTES, 'UTF-8')); ?></p>
                 </div>
             </div>
         </section>
 
-        <!-- Compras -->
         <section class="user-block">
             <header class="user-block__header user-block__header--sub">
                 <h2 class="user-block__title">Compras</h2>
@@ -172,7 +111,7 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
                     <input type="hidden" name="id" value="<?php echo $usuarioId; ?>">
                     <label>Buscar por ID</label>
                     <input type="text" name="order_id" placeholder="ID compra"
-                        value="<?php echo isset($_GET['order_id']) ? htmlspecialchars($_GET['order_id']) : ''; ?>">
+                        value="<?php echo isset($_GET['order_id']) ? htmlspecialchars($_GET['order_id'], ENT_QUOTES, 'UTF-8') : ''; ?>">
                     <button type="submit" class="btn btn-secondary">Buscar</button>
                 </form>
             </header>
@@ -186,14 +125,14 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
                 $printed = false;
 
                 foreach ($orders as $order):
-                    if ($filter !== null && $filter !== (int) $order['compra_id'])
+                    if ($filter !== null && $filter !== (int) $order['compra_id']) {
                         continue;
+                    }
 
                     $printed = true;
-                    $compraId = $order['compra_id'];
+                    $compraId = (int) $order['compra_id'];
                     $fecha = $order['fecha'];
 
-                    // ================== CARGAR PRODUCTOS ==================
                     $stmtDet = $conn->prepare(
                         "SELECT dc.cantidad,
                                 dc.precio_unitario,
@@ -219,14 +158,12 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
                         <header class="order-card__header">
                             <div class="order-meta">
                                 <span class="order-meta__label">Fecha</span>
-                                <span class="order-meta__value"><?php echo $fecha; ?></span>
+                                <span class="order-meta__value"><?php echo htmlspecialchars($fecha, ENT_QUOTES, 'UTF-8'); ?></span>
                             </div>
 
                             <div class="order-meta">
                                 <span class="order-meta__label">Total</span>
-                                <span class="order-meta__value">
-                                    $<?php echo number_format($order['total'], 2); ?>
-                                </span>
+                                <span class="order-meta__value">$<?php echo number_format($order['total'], 2); ?></span>
                             </div>
 
                             <div class="order-meta">
@@ -236,44 +173,33 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
 
                             <div class="order-meta">
                                 <span class="order-meta__label">Ciudad</span>
-                                <span class="order-meta__value">
-                                    <?php echo htmlspecialchars($order['ciudad_envio']); ?>
-                                </span>
+                                <span class="order-meta__value"><?php echo htmlspecialchars($order['ciudad_envio'], ENT_QUOTES, 'UTF-8'); ?></span>
                             </div>
 
                             <div class="order-card__actions">
-                                <!-- Eliminar compra -->
                                 <button type="button" class="btn btn-danger open-delete-modal"
                                     data-compra="<?php echo $compraId; ?>">
                                     Eliminar
                                 </button>
 
-                                <!-- Ver ticket -->
                                 <a href="ticket-compra.php?id=<?php echo $compraId; ?>" class="btn btn-primary"
                                     target="_blank">
                                     Ticket
                                 </a>
                             </div>
-
                         </header>
 
                         <div class="order-card__body">
                             <?php foreach ($items as $item): ?>
                                 <figure class="order-product">
                                     <?php if (!empty($item['imagen'])): ?>
-                                        <img src="<?php echo htmlspecialchars($item['imagen']); ?>"
-                                            alt="<?php echo htmlspecialchars($item['nombre']); ?>">
+                                        <img src="<?php echo htmlspecialchars($item['imagen'], ENT_QUOTES, 'UTF-8'); ?>"
+                                            alt="<?php echo htmlspecialchars($item['nombre'], ENT_QUOTES, 'UTF-8'); ?>">
                                     <?php endif; ?>
                                     <figcaption>
-                                        <p class="order-product__name">
-                                            <?php echo htmlspecialchars($item['nombre']); ?>
-                                        </p>
-                                        <p class="order-product__qty">
-                                            Cantidad: <?php echo $item['cantidad']; ?>
-                                        </p>
-                                        <p class="order-product__subtotal">
-                                            Subtotal: $<?php echo number_format($item['subtotal'], 2); ?>
-                                        </p>
+                                        <p class="order-product__name"><?php echo htmlspecialchars($item['nombre'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                        <p class="order-product__qty">Cantidad: <?php echo (int) $item['cantidad']; ?></p>
+                                        <p class="order-product__subtotal">Subtotal: $<?php echo number_format($item['subtotal'], 2); ?></p>
                                     </figcaption>
                                 </figure>
                             <?php endforeach; ?>
@@ -289,11 +215,8 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
         </section>
     </main>
 
-    <footer class="footer">
-        <p>© Raíz Viva</p>
-    </footer>
+    <?php require_once "app/views/layouts/footer.php"; ?>
 
-    <!-- MODAL ELIMINAR COMPRA -->
     <div class="modal-backdrop" id="modalEliminarCompra" hidden>
         <div class="modal-dialog">
             <h2 class="modal-title">Eliminar compra</h2>
@@ -302,6 +225,7 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
                 <strong>Esta acción no se puede deshacer.</strong>
             </p>
             <form id="formEliminarCompra" method="POST" action="admin_eliminar_compra.php">
+                <?php echo csrfField(); ?>
                 <input type="hidden" name="compra_id" id="inputCompraId">
                 <input type="hidden" name="usuario_id" value="<?php echo $usuarioId; ?>">
 
@@ -315,7 +239,6 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-
             const modal = document.getElementById("modalEliminarCompra");
             const cancelar = document.getElementById("cancelarEliminarCompra");
             const inputCompraId = document.getElementById("inputCompraId");
@@ -332,7 +255,6 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
                 modal.setAttribute("hidden", true);
             });
 
-            // Cerrar modal haciendo click fuera del diálogo
             modal.addEventListener("click", (e) => {
                 if (e.target === modal) {
                     modal.setAttribute("hidden", true);
@@ -340,8 +262,6 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
             });
         });
     </script>
-
-
 </body>
 
 </html>

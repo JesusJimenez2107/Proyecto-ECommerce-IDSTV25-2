@@ -1,24 +1,11 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . "/app/config/security.php";
+requireLogin();
 
-// Para el header: Declarar $logged antes de usarlo en el HTML
-$logged = isset($_SESSION['usuario_id']) && !empty($_SESSION['usuario_id']);
-
-if (!$logged) {
-    header("Location: login.php?error=login_required");
-    exit;
-}
-
-require_once "app/config/connectionController.php";
-require_once "app/controllers/cartController.php";
+require_once __DIR__ . "/app/config/connectionController.php";
 
 $usuario_id = (int) $_SESSION['usuario_id'];
 $isAdmin = (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin');
-
-$cart = new CartController();
-$cartCount = $cart->getCartCount($usuario_id);
 
 $conn = (new ConnectionController())->connect();
 
@@ -27,90 +14,77 @@ $conn = (new ConnectionController())->connect();
 // ==========================================
 
 if ($isAdmin) {
-    // 1. Total Clientes (Admin)
     $qClientes = "SELECT COUNT(DISTINCT usuario_usuario_id) as total FROM compra WHERE fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
     $totalClientes = $conn->query($qClientes)->fetch_assoc()['total'] ?? 0;
 
-    // 2. Total Órdenes (Admin)
     $qOrdenes = "SELECT COUNT(compra_id) as total FROM compra WHERE fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
     $totalOrdenes = $conn->query($qOrdenes)->fetch_assoc()['total'] ?? 0;
 
-    // 3. En Camino (Admin)
     $enCamino = 0;
     try {
         $qCamino = "SELECT COUNT(seguimiento_id) as total FROM seguimiento_envio WHERE estado_envio = 'En camino' AND fecha_actualizacion >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
         $resCamino = $conn->query($qCamino);
-        if ($resCamino)
+        if ($resCamino) {
             $enCamino = $resCamino->fetch_assoc()['total'] ?? 0;
+        }
     } catch (mysqli_sql_exception $e) {
     }
 
-    // 4. Ingreso Total (Admin - Suma de todos los totales)
     $qIngreso = "SELECT SUM(total) as total FROM compra WHERE fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
     $resIngreso = $conn->query($qIngreso);
     $ingresoTotal = number_format($resIngreso->fetch_assoc()['total'] ?? 0, 2);
 
-    // Gráfica de Ingresos Diarios (Admin) - CAMBIADO DE COUNT A SUM(total)
     $qGrafica = "SELECT DATE(fecha) as dia, SUM(total) as ingresos FROM compra WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) GROUP BY DATE(fecha)";
 
-    // Top Productos (Admin)
     $qTop = "SELECT p.nombre, p.imagen as img, SUM(d.cantidad) as total_vendido
              FROM detalle_compra d
              INNER JOIN producto p ON d.producto_producto_id = p.producto_id
              GROUP BY p.producto_id
              ORDER BY total_vendido DESC LIMIT 8";
 
-    // Ingresos por Categoría (Admin - Últimos 30 días) - CAMBIADO DE cantidad a subtotal
     $qCategorias = "SELECT p.categoria_categoria_id as cat_id, SUM(d.subtotal) as ingresos
                     FROM detalle_compra d
                     INNER JOIN compra c ON d.compra_compra_id = c.compra_id
                     INNER JOIN producto p ON d.producto_producto_id = p.producto_id
                     WHERE c.fecha >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
                     GROUP BY p.categoria_categoria_id";
-
 } else {
-    // 1. Total Clientes (Vendedor)
     $qClientes = "SELECT COUNT(DISTINCT c.usuario_usuario_id) as total 
                   FROM compra c INNER JOIN detalle_compra d ON c.compra_id = d.compra_compra_id INNER JOIN producto p ON d.producto_producto_id = p.producto_id
                   WHERE p.usuario_id = $usuario_id AND c.fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
     $totalClientes = $conn->query($qClientes)->fetch_assoc()['total'] ?? 0;
 
-    // 2. Total Órdenes (Vendedor)
     $qOrdenes = "SELECT COUNT(DISTINCT c.compra_id) as total 
                  FROM compra c INNER JOIN detalle_compra d ON c.compra_id = d.compra_compra_id INNER JOIN producto p ON d.producto_producto_id = p.producto_id
                  WHERE p.usuario_id = $usuario_id AND c.fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
     $totalOrdenes = $conn->query($qOrdenes)->fetch_assoc()['total'] ?? 0;
 
-    // 3. En Camino (Vendedor)
     $enCamino = 0;
     try {
         $qCamino = "SELECT COUNT(DISTINCT s.seguimiento_id) as total 
                     FROM seguimiento_envio s INNER JOIN detalle_compra d ON s.compra_id = d.compra_compra_id INNER JOIN producto p ON d.producto_producto_id = p.producto_id
                     WHERE p.usuario_id = $usuario_id AND s.estado_envio = 'En camino' AND s.fecha_actualizacion >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
         $resCamino = $conn->query($qCamino);
-        if ($resCamino)
+        if ($resCamino) {
             $enCamino = $resCamino->fetch_assoc()['total'] ?? 0;
+        }
     } catch (mysqli_sql_exception $e) {
     }
 
-    // 4. Ingreso Total (Vendedor - 90% de sus ventas)
     $qIngreso = "SELECT SUM(d.subtotal * 0.90) as total 
                  FROM detalle_compra d INNER JOIN compra c ON d.compra_compra_id = c.compra_id INNER JOIN producto p ON d.producto_producto_id = p.producto_id
                  WHERE p.usuario_id = $usuario_id AND c.fecha >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
     $resIngreso = $conn->query($qIngreso);
     $ingresoTotal = number_format($resIngreso->fetch_assoc()['total'] ?? 0, 2);
 
-    // Gráfica de Ingresos Diarios (Vendedor) - CAMBIADO DE COUNT A SUM(subtotal * 0.90)
     $qGrafica = "SELECT DATE(c.fecha) as dia, SUM(d.subtotal * 0.90) as ingresos 
                  FROM compra c INNER JOIN detalle_compra d ON c.compra_id = d.compra_compra_id INNER JOIN producto p ON d.producto_producto_id = p.producto_id
                  WHERE p.usuario_id = $usuario_id AND c.fecha >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) GROUP BY DATE(c.fecha)";
 
-    // Top Productos (Vendedor)
     $qTop = "SELECT p.nombre, p.imagen as img, SUM(d.cantidad) as total_vendido
              FROM detalle_compra d INNER JOIN producto p ON d.producto_producto_id = p.producto_id
              WHERE p.usuario_id = $usuario_id GROUP BY p.producto_id ORDER BY total_vendido DESC LIMIT 8";
 
-    // Ingresos por Categoría (Vendedor - Últimos 30 días) - CAMBIADO DE cantidad a subtotal * 0.90
     $qCategorias = "SELECT p.categoria_categoria_id as cat_id, SUM(d.subtotal * 0.90) as ingresos
                     FROM detalle_compra d
                     INNER JOIN compra c ON d.compra_compra_id = c.compra_id
@@ -134,7 +108,7 @@ for ($i = 6; $i >= 0; $i--) {
 $resGrafica = $conn->query($qGrafica);
 if ($resGrafica) {
     while ($row = $resGrafica->fetch_assoc()) {
-        $ventas_grafica_temp[$row['dia']] = (float) $row['ingresos']; // Ahora es float por ser dinero
+        $ventas_grafica_temp[$row['dia']] = (float) $row['ingresos'];
     }
 }
 $ventas_grafica = array_values($ventas_grafica_temp);
@@ -166,20 +140,17 @@ $datos_categorias = [];
 $resCategorias = $conn->query($qCategorias);
 if ($resCategorias) {
     while ($row = $resCategorias->fetch_assoc()) {
-        $catId = (int)$row['cat_id'];
+        $catId = (int) $row['cat_id'];
         $labels_categorias[] = $nombres_categorias[$catId] ?? "Otros";
-        $datos_categorias[] = (float)$row['ingresos']; // Ahora es float
+        $datos_categorias[] = (float) $row['ingresos'];
     }
 }
 
-// Si no hay ventas, mostramos un gráfico vacío en gris
 if (empty($datos_categorias)) {
     $labels_categorias = ["Sin ventas"];
-    $datos_categorias = [1]; 
+    $datos_categorias = [1];
 }
-
 ?>
-
 <!DOCTYPE html>
 <html lang="es">
 
@@ -353,82 +324,7 @@ if (empty($datos_categorias)) {
 
 <body>
 
-    <header class="topbar">
-        <div class="topbar__inner">
-            <a class="brand" href="index.php">
-                <img src="Assets/img/logo.png" alt="Raíz Viva" />
-            </a>
-
-            <div class="nav-dropdown">
-                <button class="nav-dropbtn" id="btnProductos" aria-haspopup="true" aria-expanded="false"
-                    aria-controls="menuProductos">
-                    Productos
-                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                        <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" />
-                    </svg>
-                </button>
-
-                <nav class="nav-menu" id="menuProductos" role="menu" hidden>
-                    <a role="menuitem" href="productos.php?cat=1" class="nav-menu__item">Plantas de interior</a>
-                    <a role="menuitem" href="productos.php?cat=2" class="nav-menu__item">Plantas de exterior</a>
-                    <a role="menuitem" href="productos.php?cat=3" class="nav-menu__item">Bajo mantenimiento</a>
-                    <a role="menuitem" href="productos.php?cat=4" class="nav-menu__item">Aromáticas y comestibles</a>
-                    <a role="menuitem" href="productos.php?cat=5" class="nav-menu__item">Macetas y accesorios</a>
-                    <a role="menuitem" href="productos.php?cat=6" class="nav-menu__item">Cuidados y bienestar</a>
-                </nav>
-            </div>
-
-            <form action="productos.php" method="GET" class="search" role="search">
-                <input type="search" name="search" placeholder="Buscar" aria-label="Buscar"
-                    value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
-                <button type="submit" aria-label="Buscar">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#586a58" stroke-width="2">
-                        <circle cx="11" cy="11" r="7" />
-                        <path d="m20 20-3.5-3.5" />
-                    </svg>
-                </button>
-            </form>
-
-            <div class="actions">
-                <?php if ($logged): ?>
-                    <a href="mi-cuenta.php" class="action">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                            <path d="M20 21a8 8 0 1 0-16 0" />
-                            <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        <span>
-                            <?php
-                            if (isset($_SESSION['nombre']) && !empty($_SESSION['nombre'])) {
-                                $primerNombre = explode(' ', trim($_SESSION['nombre']))[0];
-                                echo htmlspecialchars(ucfirst(strtolower($primerNombre)));
-                            } else {
-                                echo 'Mi cuenta';
-                            }
-                            ?>
-                        </span>
-                    </a>
-                <?php else: ?>
-                    <a href="login.php" class="action">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                            <path d="M20 21a8 8 0 1 0-16 0" />
-                            <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        <span>Ingresar</span>
-                    </a>
-                <?php endif; ?>
-
-                <a href="carrito.php" class="action">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                        <circle cx="10" cy="20" r="1"></circle>
-                        <circle cx="18" cy="20" r="1"></circle>
-                        <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6"></path>
-                    </svg>
-                    <span><?php echo $cartCount; ?></span>
-                </a>
-            </div>
-        </div>
-    </header>
+    <?php require_once "app/views/layouts/header.php"; ?>
 
     <main class="page">
         <nav class="breadcrumb">
@@ -440,7 +336,6 @@ if (empty($datos_categorias)) {
         </div>
 
         <div class="dash-container">
-
             <section class="kpi-grid">
                 <div class="dash-card">
                     <div class="kpi-content">
@@ -454,7 +349,7 @@ if (empty($datos_categorias)) {
                             </svg>
                         </div>
                     </div>
-                    <div class="kpi-value"><?php echo $totalClientes; ?></div>
+                    <div class="kpi-value"><?php echo (int) $totalClientes; ?></div>
                 </div>
 
                 <div class="dash-card">
@@ -471,7 +366,7 @@ if (empty($datos_categorias)) {
                             </svg>
                         </div>
                     </div>
-                    <div class="kpi-value"><?php echo $totalOrdenes; ?></div>
+                    <div class="kpi-value"><?php echo (int) $totalOrdenes; ?></div>
                 </div>
 
                 <div class="dash-card">
@@ -489,7 +384,7 @@ if (empty($datos_categorias)) {
                             </svg>
                         </div>
                     </div>
-                    <div class="kpi-value"><?php echo $enCamino; ?></div>
+                    <div class="kpi-value"><?php echo (int) $enCamino; ?></div>
                 </div>
 
                 <div class="dash-card">
@@ -511,7 +406,6 @@ if (empty($datos_categorias)) {
             </section>
 
             <section class="middle-grid">
-
                 <div class="dash-card" style="grid-column: span 2; display: flex; flex-direction: column;">
                     <div class="chart-header">
                         <h3>Ingresos Netos Diarios</h3>
@@ -529,21 +423,19 @@ if (empty($datos_categorias)) {
                         <canvas id="categoriasChart"></canvas>
                     </div>
                 </div>
-
             </section>
 
             <section style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem;">
-                
                 <div class="dash-card products-card" style="grid-column: span 3; display: flex; flex-direction: column; justify-content: center;">
                     <h3>Productos más vendidos</h3>
                     <div class="products-scroll">
                         <?php if (!empty($productos_top)): ?>
                             <?php foreach ($productos_top as $prod): ?>
                                 <div class="prod-item">
-                                    <img src="<?php echo htmlspecialchars($prod['img']); ?>"
-                                        alt="<?php echo htmlspecialchars($prod['nombre']); ?>"
+                                    <img src="<?php echo htmlspecialchars($prod['img'], ENT_QUOTES, 'UTF-8'); ?>"
+                                        alt="<?php echo htmlspecialchars($prod['nombre'], ENT_QUOTES, 'UTF-8'); ?>"
                                         onerror="this.src='Assets/img/placeholder.jpg'">
-                                    <p><?php echo htmlspecialchars($prod['nombre']); ?></p>
+                                    <p><?php echo htmlspecialchars($prod['nombre'], ENT_QUOTES, 'UTF-8'); ?></p>
                                     <small><?php echo (int) $prod['total_vendido']; ?> pza</small>
                                 </div>
                             <?php endforeach; ?>
@@ -563,22 +455,19 @@ if (empty($datos_categorias)) {
                     </div>
                     <h3>Reportes</h3>
                 </a>
-
             </section>
-
         </div>
     </main>
 
+    <?php require_once "app/views/layouts/footer.php"; ?>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            
-            // Función de formateo de moneda global para las gráficas
             const formatter = new Intl.NumberFormat('es-MX', {
                 style: 'currency',
                 currency: 'MXN'
             });
 
-            // 1. Gráfica de Barras (Ingresos Diarios)
             const ctxVentas = document.getElementById('ventasChart').getContext('2d');
             const labelsVentas = <?php echo json_encode($fechas_grafica); ?>;
             const dataVentas = <?php echo json_encode($ventas_grafica); ?>;
@@ -598,12 +487,11 @@ if (empty($datos_categorias)) {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { 
+                    plugins: {
                         legend: { display: false },
-                        // Modificar el tooltip para que muestre el símbolo de dinero ($)
                         tooltip: {
                             callbacks: {
-                                label: function(context) {
+                                label: function (context) {
                                     return ' ' + formatter.format(context.parsed.y);
                                 }
                             }
@@ -612,13 +500,12 @@ if (empty($datos_categorias)) {
                     scales: {
                         y: {
                             beginAtZero: true,
-                            ticks: { 
-                                // Modificar el eje Y para mostrar el símbolo de $
-                                callback: function(value) {
+                            ticks: {
+                                callback: function (value) {
                                     return '$' + value;
                                 },
-                                color: '#555', 
-                                font: { size: 10 } 
+                                color: '#555',
+                                font: { size: 10 }
                             },
                             grid: { color: '#e0e0e0' }
                         },
@@ -630,12 +517,9 @@ if (empty($datos_categorias)) {
                 }
             });
 
-            // 2. Gráfica de Anillo (Ingresos por Categorías)
             const ctxCat = document.getElementById('categoriasChart').getContext('2d');
             const labelsCat = <?php echo json_encode($labels_categorias); ?>;
             const dataCat = <?php echo json_encode($datos_categorias); ?>;
-            
-            // Verificamos si no hay ventas reales para pintar la gráfica de gris
             const isEmpty = (labelsCat[0] === "Sin ventas");
 
             new Chart(ctxCat, {
@@ -644,9 +528,9 @@ if (empty($datos_categorias)) {
                     labels: labelsCat,
                     datasets: [{
                         data: dataCat,
-                        backgroundColor: isEmpty 
-                            ? ['#e0e0e0'] // Gris si no hay ventas
-                            : ['#6a8c6a', '#e07a5f', '#f4a261', '#3d405b', '#81b29a', '#e9c46a'], // Colores de tu paleta Raíz Viva
+                        backgroundColor: isEmpty
+                            ? ['#e0e0e0']
+                            : ['#6a8c6a', '#e07a5f', '#f4a261', '#3d405b', '#81b29a', '#e9c46a'],
                         borderWidth: 1,
                         borderColor: '#fcfbf9'
                     }]
@@ -654,7 +538,7 @@ if (empty($datos_categorias)) {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '70%', // Grosor del anillo
+                    cutout: '70%',
                     plugins: {
                         legend: {
                             position: 'bottom',
@@ -666,10 +550,9 @@ if (empty($datos_categorias)) {
                             }
                         },
                         tooltip: {
-                            enabled: !isEmpty, // Ocultar tooltips si no hay ventas
+                            enabled: !isEmpty,
                             callbacks: {
-                                // Modificamos el tooltip del anillo para mostrar dinero ($)
-                                label: function(context) {
+                                label: function (context) {
                                     let label = context.label || '';
                                     if (label) {
                                         label += ': ';
@@ -684,7 +567,6 @@ if (empty($datos_categorias)) {
                     }
                 }
             });
-
         });
     </script>
 </body>

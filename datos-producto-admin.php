@@ -1,28 +1,16 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . "/app/config/security.php";
+requireAdmin();
 
-// Solo admins pueden entrar
-if (!isset($_SESSION['usuario_id']) || !isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
-    header("Location: index.php");
-    exit();
-}
-
-$adminId = (int) $_SESSION['usuario_id'];
-
-// Validar id del producto
 if (!isset($_GET['id']) || !ctype_digit($_GET['id'])) {
     header("Location: productos-admin.php");
     exit();
 }
 $productoId = (int) $_GET['id'];
 
-// Conexión BD
-require_once "app/config/connectionController.php";
+require_once __DIR__ . "/app/config/connectionController.php";
 $conn = (new ConnectionController())->connect();
 
-// Obtener datos del producto (con categoría y dueño)
 $stmt = $conn->prepare(
     "SELECT p.producto_id,
             p.nombre,
@@ -45,30 +33,13 @@ $stmt = $conn->prepare(
 );
 $stmt->bind_param("i", $productoId);
 $stmt->execute();
-$res = $stmt->get_result();
-$producto = $res->fetch_assoc();
+$producto = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
 if (!$producto) {
     header("Location: productos-admin.php");
     exit();
 }
-
-// ====== CONTADOR DEL CARRITO PARA EL HEADER ======
-$logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
-$cartCount = 0;
-
-if ($logged) {
-    require_once "app/controllers/cartController.php";
-    $cartCtrl = new CartController();
-    $cartCount = $cartCtrl->getCartCount($adminId);
-}
-if (!isset($_SESSION['usuario_id']) || !isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
-    header("Location: login.php?error=admin_only");
-    exit();
-}
-
-$adminName = $_SESSION['nombre'] ?? 'Admin';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -77,41 +48,15 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Datos producto (Administrador) – Raíz Viva</title>
-
     <link rel="stylesheet" href="Assets/styles/global.css" />
     <link rel="stylesheet" href="Assets/styles/account-profile.css" />
     <link rel="stylesheet" href="Assets/styles/admin-usuarios.css">
 </head>
 
 <body>
-    <!-- Header Admin -->
-    <header class="topbar">
-        <div class="topbar__inner">
-            <a href="panel-admin.php" class="brand">
-                <img src="Assets/img/logo.png" alt="Raíz Viva">
-            </a>
-
-            <div class="topbar__admin-center">
-                <span class="topbar__admin-title">Panel de administración</span>
-
-                <nav class="topbar__admin-nav">
-                    <a href="panel-admin.php">Inicio</a>
-                    <a href="usuarios.php">Usuarios</a>
-                    <a href="productos-admin.php">Productos</a>
-                    <a href="reportes-admin.php">Reportes</a>
-                </nav>
-            </div>
-
-            <div class="actions">
-                <span class="action action--text">
-                    <?php echo htmlspecialchars($adminName); ?>
-                </span>
-            </div>
-        </div>
-    </header>
+    <?php require_once "app/views/layouts/header-admin.php"; ?>
 
     <main class="page">
-        <!-- Breadcrumb simple -->
         <nav class="breadcrumb" aria-label="Breadcrumb">
             <a href="panel-admin.php">Panel Administración</a> ›
             <a href="productos-admin.php">Productos</a> ›
@@ -121,69 +66,53 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
         <section class="profile-card">
             <header class="profile-card__header">
                 <h1 class="profile-title">DATOS PRODUCTO</h1>
-
             </header>
 
-            <!-- Imagen principal (si existe) -->
             <?php if (!empty($producto['imagen'])): ?>
                 <div class="profile-photo" style="margin-bottom: 1rem;">
-                    <img src="<?php echo htmlspecialchars($producto['imagen']); ?>"
-                        alt="<?php echo htmlspecialchars($producto['nombre']); ?>"
+                    <img src="<?php echo htmlspecialchars($producto['imagen'], ENT_QUOTES, 'UTF-8'); ?>"
+                        alt="<?php echo htmlspecialchars($producto['nombre'], ENT_QUOTES, 'UTF-8'); ?>"
                         style="max-width: 220px; border-radius: 12px; object-fit: cover;">
                 </div>
             <?php endif; ?>
 
-            <!-- Datos -->
             <dl class="profile-data">
                 <div class="row">
                     <dt>ID</dt>
-                    <dd>
-                        <?php echo (int) $producto['producto_id']; ?>
-                    </dd>
+                    <dd><?php echo (int) $producto['producto_id']; ?></dd>
                 </div>
 
                 <div class="row">
                     <dt>Nombre</dt>
-                    <dd>
-                        <?php echo htmlspecialchars($producto['nombre']); ?>
-                    </dd>
+                    <dd><?php echo htmlspecialchars($producto['nombre'], ENT_QUOTES, 'UTF-8'); ?></dd>
                 </div>
 
                 <div class="row">
                     <dt>Categoría</dt>
-                    <dd>
-                        <?php echo htmlspecialchars($producto['categoria_nombre'] ?? 'Sin categoría'); ?>
-                    </dd>
+                    <dd><?php echo htmlspecialchars($producto['categoria_nombre'] ?? 'Sin categoría', ENT_QUOTES, 'UTF-8'); ?></dd>
                 </div>
 
                 <div class="row">
                     <dt>Precio</dt>
-                    <dd>$
-                        <?php echo number_format($producto['precio'], 2); ?>
-                    </dd>
+                    <dd>$<?php echo number_format($producto['precio'], 2); ?></dd>
                 </div>
 
                 <div class="row">
                     <dt>Stock</dt>
-                    <dd>
-                        <?php echo (int) $producto['stock']; ?>
-                    </dd>
+                    <dd><?php echo (int) $producto['stock']; ?></dd>
                 </div>
 
                 <div class="row">
                     <dt>Estado</dt>
-                    <dd>
-                        <?php echo ucfirst(htmlspecialchars($producto['estado'])); ?>
-                    </dd>
+                    <dd><?php echo ucfirst(htmlspecialchars($producto['estado'], ENT_QUOTES, 'UTF-8')); ?></dd>
                 </div>
 
                 <div class="row">
                     <dt>Vendedor / Dueño</dt>
                     <dd>
                         <?php if ($producto['dueno_nombre']): ?>
-                            <?php echo htmlspecialchars($producto['dueno_nombre'] . ' ' . $producto['dueno_apellidos']); ?>
-                            (
-                            <?php echo htmlspecialchars($producto['dueno_email']); ?>)
+                            <?php echo htmlspecialchars($producto['dueno_nombre'] . ' ' . $producto['dueno_apellidos'], ENT_QUOTES, 'UTF-8'); ?>
+                            (<?php echo htmlspecialchars($producto['dueno_email'], ENT_QUOTES, 'UTF-8'); ?>)
                         <?php else: ?>
                             Sin asignar
                         <?php endif; ?>
@@ -192,38 +121,33 @@ $adminName = $_SESSION['nombre'] ?? 'Admin';
 
                 <div class="row">
                     <dt>Descripción</dt>
-                    <dd>
-                        <?php echo nl2br(htmlspecialchars($producto['descripcion'])); ?>
-                    </dd>
+                    <dd><?php echo nl2br(htmlspecialchars($producto['descripcion'], ENT_QUOTES, 'UTF-8')); ?></dd>
                 </div>
             </dl>
 
-            <!-- Si quieres, puedes mostrar miniaturas de extra1 y extra2 -->
             <?php if (!empty($producto['imagen_extra1']) || !empty($producto['imagen_extra2'])): ?>
                 <div class="profile-extra-photos">
                     <?php if (!empty($producto['imagen_extra1'])): ?>
-                        <img src="<?php echo htmlspecialchars($producto['imagen_extra1']); ?>" alt="Foto extra 1"
+                        <img src="<?php echo htmlspecialchars($producto['imagen_extra1'], ENT_QUOTES, 'UTF-8'); ?>" alt="Foto extra 1"
                             style="max-width: 130px; border-radius: 10px; margin-right: 8px;">
                     <?php endif; ?>
 
                     <?php if (!empty($producto['imagen_extra2'])): ?>
-                        <img src="<?php echo htmlspecialchars($producto['imagen_extra2']); ?>" alt="Foto extra 2"
+                        <img src="<?php echo htmlspecialchars($producto['imagen_extra2'], ENT_QUOTES, 'UTF-8'); ?>" alt="Foto extra 2"
                             style="max-width: 130px; border-radius: 10px;">
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
 
             <div class="profile-actions">
-                <a href="editar-producto-admin.php?id=<?php echo $producto['producto_id']; ?>" class="btn-edit">
+                <a href="editar-producto-admin.php?id=<?php echo (int) $producto['producto_id']; ?>" class="btn-edit">
                     Editar
                 </a>
             </div>
         </section>
     </main>
 
-    <footer class="footer">
-        <p>© Raíz Viva</p>
-    </footer>
+    <?php require_once "app/views/layouts/footer.php"; ?>
 </body>
 
 </html>

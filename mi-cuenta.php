@@ -1,31 +1,17 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . "/app/config/security.php";
+requireLogin();
 
-if (!isset($_SESSION['usuario_id'])) {
-    header("Location: login.php?error=login_required");
-    exit;
-}
-
-require_once "app/config/connectionController.php";
-require_once "app/controllers/cartController.php";
+require_once __DIR__ . "/app/config/connectionController.php";
 
 $usuario_id = (int) $_SESSION['usuario_id'];
-$logged = true;
 
-// Obtener carrito
-$cartCtrl = new CartController();
-$cartCount = $cartCtrl->getCartCount($usuario_id);
-
-// Conexión para verificar el rol del usuario
 $conn = (new ConnectionController())->connect();
 $stmt = $conn->prepare("SELECT rol FROM usuario WHERE usuario_id = ?");
 $stmt->bind_param("i", $usuario_id);
 $stmt->execute();
 $resUsuario = $stmt->get_result()->fetch_assoc();
 
-// Determinamos si es vendedor o administrador (Ignorando mayúsculas)
 $rolUsuario = strtolower(trim($resUsuario['rol'] ?? 'cliente'));
 $esVendedor = ($rolUsuario === 'vendedor' || $rolUsuario === 'admin');
 ?>
@@ -39,104 +25,7 @@ $esVendedor = ($rolUsuario === 'vendedor' || $rolUsuario === 'admin');
     <link rel="stylesheet" href="Assets/styles/account.css" />
 </head>
 <body>
-    <header class="topbar">
-        <div class="topbar__inner">
-            <a class="brand" href="index.php">
-                <img src="Assets/img/logo.png" alt="Raíz Viva" />
-            </a>
-
-            <div class="nav-dropdown">
-                <button class="nav-dropbtn" id="btnProductos" aria-haspopup="true" aria-expanded="false"
-                    aria-controls="menuProductos">
-                    Productos
-                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                        <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" />
-                    </svg>
-                </button>
-
-                <!-- Menú de categorías -->
-                <nav class="nav-menu" id="menuProductos" role="menu" hidden>
-                    <a role="menuitem" href="productos.php?cat=1" class="nav-menu__item">
-                        Plantas de interior
-                    </a>
-
-                    <a role="menuitem" href="productos.php?cat=2" class="nav-menu__item">
-                        Plantas de exterior
-                    </a>
-
-                    <a role="menuitem" href="productos.php?cat=3" class="nav-menu__item">
-                        Bajo mantenimiento
-                    </a>
-
-                    <a role="menuitem" href="productos.php?cat=4" class="nav-menu__item">
-                        Aromáticas y comestibles
-                    </a>
-
-                    <a role="menuitem" href="productos.php?cat=5" class="nav-menu__item">
-                        Macetas y accesorios
-                    </a>
-
-                    <a role="menuitem" href="productos.php?cat=6" class="nav-menu__item">
-                        Cuidados y bienestar
-                    </a>
-                </nav>
-            </div>
-
-            <form action="productos.php" method="GET" class="search" role="search">
-                <input type="search" name="search" placeholder="Buscar" aria-label="Buscar"
-                    value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
-                <button type="submit" aria-label="Buscar">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#586a58" stroke-width="2">
-                        <circle cx="11" cy="11" r="7" />
-                        <path d="m20 20-3.5-3.5" />
-                    </svg>
-                </button>
-            </form>
-
-            <div class="actions">
-
-                <?php if ($logged): ?>
-                    <a href="mi-cuenta.php" class="action">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                            <path d="M20 21a8 8 0 1 0-16 0" />
-                            <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        <span>
-                            <?php
-                            // Si existe el nombre en sesión, extraemos solo el primer nombre
-                            if (isset($_SESSION['nombre']) && !empty($_SESSION['nombre'])) {
-                                $primerNombre = explode(' ', trim($_SESSION['nombre']))[0];
-                                // Ponemos la primera letra en mayúscula
-                                echo htmlspecialchars(ucfirst(strtolower($primerNombre)));
-                            } else {
-                                echo 'Mi cuenta';
-                            }
-                            ?>
-                        </span>
-                    </a>
-                <?php else: ?>
-                    <a href="login.php" class="action">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                            <path d="M20 21a8 8 0 1 0-16 0" />
-                            <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        <span>Ingresar</span>
-                    </a>
-                <?php endif; ?>
-
-
-                <a href="carrito.php" class="action">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                        <circle cx="10" cy="20" r="1"></circle>
-                        <circle cx="18" cy="20" r="1"></circle>
-                        <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6"></path>
-                    </svg>
-                    <span><?php echo $cartCount; ?></span>
-                </a>
-            </div>
-        </div>
-    </header>
+    <?php require_once "app/views/layouts/header.php"; ?>
 
     <main class="page">
         <h1 class="account-title">MI CUENTA</h1>
@@ -153,7 +42,6 @@ $esVendedor = ($rolUsuario === 'vendedor' || $rolUsuario === 'admin');
             </a>
 
             <?php if ($esVendedor): ?>
-                
                 <a class="tile" href="mis-productos.php">
                     <img class="tile-icon" src="Assets/icons/boxes.svg" alt="" aria-hidden="true">
                     <span class="tile-title">Mis productos</span>
@@ -163,9 +51,7 @@ $esVendedor = ($rolUsuario === 'vendedor' || $rolUsuario === 'admin');
                     <img class="tile-icon" src="Assets/icons/report.svg" alt="" aria-hidden="true">
                     <span class="tile-title">Dashboard</span>
                 </a>
-
             <?php else: ?>
-                
                 <a class="tile" href="alta-vendedor.php">
                     <svg class="tile-icon" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
                         <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -175,7 +61,6 @@ $esVendedor = ($rolUsuario === 'vendedor' || $rolUsuario === 'admin');
                     </svg>
                     <span class="tile-title">Dar de alta como vendedor</span>
                 </a>
-
             <?php endif; ?>
 
             <a class="tile" href="logout.php" id="logout-link">
@@ -191,6 +76,7 @@ $esVendedor = ($rolUsuario === 'vendedor' || $rolUsuario === 'admin');
     </main>
 
     <form id="deleteAccountForm" action="eliminar_cuenta.php" method="POST" style="display:none;">
+        <?php echo csrfField(); ?>
         <input type="hidden" name="action" value="deleteAccount">
     </form>
 
@@ -216,9 +102,7 @@ $esVendedor = ($rolUsuario === 'vendedor' || $rolUsuario === 'admin');
         </div>
     </div>
 
-    <footer class="footer">
-        <p>© Raíz Viva</p>
-    </footer>
+    <?php require_once "app/views/layouts/footer.php"; ?>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {

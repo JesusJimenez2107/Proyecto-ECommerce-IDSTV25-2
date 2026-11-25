@@ -1,48 +1,26 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . "/app/config/security.php";
+requireLogin();
 
-// Debe estar logueado
-if (!isset($_SESSION['usuario_id'])) {
-    header("Location: login.php?error=login_required");
-    exit;
-}
-
-require_once "app/config/connectionController.php";
-require_once "app/controllers/cartController.php";
+require_once __DIR__ . "/app/config/connectionController.php";
 
 $conn = (new ConnectionController())->connect();
 
 $usuario_id = (int) $_SESSION['usuario_id'];
-// Identificar si es administrador
 $isAdmin = (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin');
 
-// Para el header
-$logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
-$cartCount = 0;
-if ($logged) {
-    $cartCtrl = new CartController();
-    $cartCount = $cartCtrl->getCartCount($usuario_id);
-}
-
-// --------- Parámetros de filtro ---------
-$tipo = $_GET['tipo'] ?? 'ventas';           // ventas | productos | clientes
-$inicio = $_GET['inicio'] ?? date('Y-m-01');     // primer día del mes
-$fin = $_GET['fin'] ?? date('Y-m-d');      // hoy
+$tipo = $_GET['tipo'] ?? 'ventas';
+$inicio = $_GET['inicio'] ?? date('Y-m-01');
+$fin = $_GET['fin'] ?? date('Y-m-d');
 
 $inicioParam = $inicio . ' 00:00:00';
 $finParam = $fin . ' 23:59:59';
 
 $rows = [];
-$title = '';
 $totalPeriodo = 0.0;
-
-// --------- Consultas Híbridas (Admin vs Vendedor) ---------
 
 if ($tipo === 'ventas') {
     if ($isAdmin) {
-        $title = "Ventas Globales";
         $sql = "SELECT c.fecha, c.compra_id, u.nombre AS cliente, c.total
                 FROM compra c
                 INNER JOIN usuario u ON c.usuario_usuario_id = u.usuario_id
@@ -51,7 +29,6 @@ if ($tipo === 'ventas') {
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("ss", $inicioParam, $finParam);
     } else {
-        $title = "Mis Ventas";
         $sql = "SELECT c.fecha, c.compra_id, u.nombre AS cliente, SUM(d.subtotal) AS total
                 FROM compra c
                 INNER JOIN usuario u ON c.usuario_usuario_id = u.usuario_id
@@ -63,10 +40,8 @@ if ($tipo === 'ventas') {
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("ssi", $inicioParam, $finParam, $usuario_id);
     }
-
 } elseif ($tipo === 'productos') {
     if ($isAdmin) {
-        $title = "Productos más vendidos (Global)";
         $sql = "SELECT p.nombre, SUM(d.cantidad) AS unidades_vendidas, SUM(d.subtotal) AS total_vendido
                 FROM compra c
                 INNER JOIN detalle_compra d ON d.compra_compra_id = c.compra_id
@@ -77,7 +52,6 @@ if ($tipo === 'ventas') {
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("ss", $inicioParam, $finParam);
     } else {
-        $title = "Mis Productos más vendidos";
         $sql = "SELECT p.nombre, SUM(d.cantidad) AS unidades_vendidas, SUM(d.subtotal) AS total_vendido
                 FROM compra c
                 INNER JOIN detalle_compra d ON d.compra_compra_id = c.compra_id
@@ -88,10 +62,8 @@ if ($tipo === 'ventas') {
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("ssi", $inicioParam, $finParam, $usuario_id);
     }
-
 } elseif ($tipo === 'clientes') {
     if ($isAdmin) {
-        $title = "Clientes VIP (Global)";
         $sql = "SELECT u.nombre AS cliente, COUNT(c.compra_id) AS num_compras, SUM(c.total) AS total_gastado
                 FROM compra c
                 INNER JOIN usuario u ON c.usuario_usuario_id = u.usuario_id
@@ -101,7 +73,6 @@ if ($tipo === 'ventas') {
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("ss", $inicioParam, $finParam);
     } else {
-        $title = "Mis Mejores Clientes";
         $sql = "SELECT u.nombre AS cliente, COUNT(DISTINCT c.compra_id) AS num_compras, SUM(d.subtotal) AS total_gastado
                 FROM compra c
                 INNER JOIN usuario u ON c.usuario_usuario_id = u.usuario_id
@@ -114,18 +85,15 @@ if ($tipo === 'ventas') {
         $stmt->bind_param("ssi", $inicioParam, $finParam, $usuario_id);
     }
 } else {
-    // fallback
     header("Location: reportes.php");
-    exit;
+    exit();
 }
 
-// Ejecutamos
 $stmt->execute();
 $result = $stmt->get_result();
 
 while ($r = $result->fetch_assoc()) {
     $rows[] = $r;
-
     if ($tipo === 'ventas') {
         $totalPeriodo += (float) $r['total'];
     } elseif ($tipo === 'productos') {
@@ -139,313 +107,205 @@ while ($r = $result->fetch_assoc()) {
 <html lang="es">
 
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Reportes – Raíz Viva</title>
-
-  <link rel="stylesheet" href="Assets/styles/global.css?v=2" />
-  <link rel="stylesheet" href="Assets/styles/reportes.css" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reportes – Raíz Viva</title>
+    <link rel="stylesheet" href="Assets/styles/global.css?v=2" />
+    <link rel="stylesheet" href="Assets/styles/reportes.css" />
 </head>
 
 <body>
-  <header class="topbar">
-        <div class="topbar__inner">
-            <a class="brand" href="index.php">
-                <img src="Assets/img/logo.png" alt="Raíz Viva" />
-            </a>
+    <?php require_once "app/views/layouts/header.php"; ?>
 
-            <div class="nav-dropdown">
-                <button class="nav-dropbtn" id="btnProductos" aria-haspopup="true" aria-expanded="false"
-                    aria-controls="menuProductos">
-                    Productos
-                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                        <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" />
-                    </svg>
-                </button>
+    <main class="page">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="mi-cuenta.php">Mi Cuenta</a> › <span>Reportes</span>
+        </nav>
 
-                <nav class="nav-menu" id="menuProductos" role="menu" hidden>
-                    <a role="menuitem" href="productos.php?cat=1" class="nav-menu__item">
-                        Plantas de interior
-                    </a>
+        <h1 class="rp-title">REPORTES</h1>
 
-                    <a role="menuitem" href="productos.php?cat=2" class="nav-menu__item">
-                        Plantas de exterior
-                    </a>
+        <div class="rp-tabs" role="tablist" aria-label="Tipo de reporte">
+            <button class="rp-tab <?php echo $tipo === 'ventas' ? 'is-active' : ''; ?>" data-report="ventas" role="tab"
+                aria-selected="<?php echo $tipo === 'ventas' ? 'true' : 'false'; ?>">
+                Ventas
+            </button>
 
-                    <a role="menuitem" href="productos.php?cat=3" class="nav-menu__item">
-                        Bajo mantenimiento
-                    </a>
+            <button class="rp-tab <?php echo $tipo === 'productos' ? 'is-active' : ''; ?>" data-report="productos" role="tab"
+                aria-selected="<?php echo $tipo === 'productos' ? 'true' : 'false'; ?>">
+                Productos más vendidos
+            </button>
 
-                    <a role="menuitem" href="productos.php?cat=4" class="nav-menu__item">
-                        Aromáticas y comestibles
-                    </a>
-
-                    <a role="menuitem" href="productos.php?cat=5" class="nav-menu__item">
-                        Macetas y accesorios
-                    </a>
-
-                    <a role="menuitem" href="productos.php?cat=6" class="nav-menu__item">
-                        Cuidados y bienestar
-                    </a>
-                </nav>
-            </div>
-
-            <form action="productos.php" method="GET" class="search" role="search">
-                <input type="search" name="search" placeholder="Buscar" aria-label="Buscar"
-                    value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
-                <button type="submit" aria-label="Buscar">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#586a58" stroke-width="2">
-                        <circle cx="11" cy="11" r="7" />
-                        <path d="m20 20-3.5-3.5" />
-                    </svg>
-                </button>
-            </form>
-
-            <div class="actions">
-
-                <?php if ($logged): ?>
-                    <a href="mi-cuenta.php" class="action">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                            <path d="M20 21a8 8 0 1 0-16 0" />
-                            <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        <span>
-                            <?php
-                            if (isset($_SESSION['nombre']) && !empty($_SESSION['nombre'])) {
-                                $primerNombre = explode(' ', trim($_SESSION['nombre']))[0];
-                                echo htmlspecialchars(ucfirst(strtolower($primerNombre)));
-                            } else {
-                                echo 'Mi cuenta';
-                            }
-                            ?>
-                        </span>
-                    </a>
-                <?php else: ?>
-                    <a href="login.php" class="action">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                            <path d="M20 21a8 8 0 1 0-16 0" />
-                            <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        <span>Ingresar</span>
-                    </a>
-                <?php endif; ?>
-
-                <a href="carrito.php" class="action">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                        <circle cx="10" cy="20" r="1"></circle>
-                        <circle cx="18" cy="20" r="1"></circle>
-                        <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6"></path>
-                    </svg>
-                    <span><?php echo $cartCount; ?></span>
-                </a>
-            </div>
+            <button class="rp-tab <?php echo $tipo === 'clientes' ? 'is-active' : ''; ?>" data-report="clientes" role="tab"
+                aria-selected="<?php echo $tipo === 'clientes' ? 'true' : 'false'; ?>">
+                Clientes con más compras
+            </button>
         </div>
-    </header>
 
-  <main class="page">
-    <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="mi-cuenta.php">Mi Cuenta</a> › <span>Reportes</span>
-    </nav>
+        <form class="rp-filters" action="reportes.php" method="get" aria-label="Filtrar por periodo">
+            <input type="hidden" name="tipo" id="rpTipo" value="<?php echo htmlspecialchars($tipo, ENT_QUOTES, 'UTF-8'); ?>" />
 
-    <h1 class="rp-title">REPORTES</h1>
+            <label class="rp-filter">
+                <span>Inicio</span>
+                <input type="date" name="inicio" id="rpInicio" required value="<?php echo htmlspecialchars($inicio, ENT_QUOTES, 'UTF-8'); ?>" />
+            </label>
 
-    <div class="rp-tabs" role="tablist" aria-label="Tipo de reporte">
-      <button class="rp-tab <?php echo $tipo === 'ventas' ? 'is-active' : ''; ?>" data-report="ventas" role="tab"
-        aria-selected="<?php echo $tipo === 'ventas' ? 'true' : 'false'; ?>">
-        Ventas
-      </button>
+            <label class="rp-filter">
+                <span>Fin</span>
+                <input type="date" name="fin" id="rpFin" required value="<?php echo htmlspecialchars($fin, ENT_QUOTES, 'UTF-8'); ?>" />
+            </label>
 
-      <button class="rp-tab <?php echo $tipo === 'productos' ? 'is-active' : ''; ?>" data-report="productos" role="tab"
-        aria-selected="<?php echo $tipo === 'productos' ? 'true' : 'false'; ?>">
-        Productos más vendidos
-      </button>
+            <button class="btn-primary" type="submit">Buscar</button>
 
-      <button class="rp-tab <?php echo $tipo === 'clientes' ? 'is-active' : ''; ?>" data-report="clientes" role="tab"
-        aria-selected="<?php echo $tipo === 'clientes' ? 'true' : 'false'; ?>">
-        Clientes con más compras
-      </button>
-    </div>
+            <div class="rp-export">
+                <a class="btn-outline" id="expCsv" href="#">CSV</a>
+                <a class="btn-outline" id="expPdf" href="#">PDF</a>
+            </div>
+        </form>
 
-    <form class="rp-filters" action="reportes.php" method="get" aria-label="Filtrar por periodo">
-      <input type="hidden" name="tipo" id="rpTipo" value="<?php echo htmlspecialchars($tipo); ?>" />
+        <section class="rp-results" aria-live="polite">
+            <div class="table-wrap">
+                <table class="rp-table">
+                    <?php if ($tipo === 'ventas'): ?>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Folio</th>
+                                <th>Cliente</th>
+                                <th class="num">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($rows)): ?>
+                                <tr><td colspan="4">No hay ventas en este periodo.</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($rows as $r): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($r['fecha'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td><?php echo htmlspecialchars($r['compra_id'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td><?php echo htmlspecialchars($r['cliente'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td class="num">$<?php echo number_format($r['total'], 2); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="3" class="right">Total periodo</th>
+                                <th class="num">$<?php echo number_format($totalPeriodo, 2); ?></th>
+                            </tr>
+                        </tfoot>
 
-      <label class="rp-filter">
-        <span>Inicio</span>
-        <input type="date" name="inicio" id="rpInicio" required value="<?php echo htmlspecialchars($inicio); ?>" />
-      </label>
+                    <?php elseif ($tipo === 'productos'): ?>
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th class="num">Unidades vendidas</th>
+                                <th class="num">Total vendido</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($rows)): ?>
+                                <tr><td colspan="3">No hay ventas de productos en este periodo.</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($rows as $r): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($r['nombre'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td class="num"><?php echo (int) $r['unidades_vendidas']; ?></td>
+                                        <td class="num">$<?php echo number_format($r['total_vendido'], 2); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="2" class="right">Total periodo</th>
+                                <th class="num">$<?php echo number_format($totalPeriodo, 2); ?></th>
+                            </tr>
+                        </tfoot>
 
-      <label class="rp-filter">
-        <span>Fin</span>
-        <input type="date" name="fin" id="rpFin" required value="<?php echo htmlspecialchars($fin); ?>" />
-      </label>
+                    <?php elseif ($tipo === 'clientes'): ?>
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th class="num">Número de compras</th>
+                                <th class="num">Total gastado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($rows)): ?>
+                                <tr><td colspan="3">No hay compras de clientes en este periodo.</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($rows as $r): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($r['cliente'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td class="num"><?php echo (int) $r['num_compras']; ?></td>
+                                        <td class="num">$<?php echo number_format($r['total_gastado'], 2); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="2" class="right">Total periodo</th>
+                                <th class="num">$<?php echo number_format($totalPeriodo, 2); ?></th>
+                            </tr>
+                        </tfoot>
+                    <?php endif; ?>
+                </table>
+            </div>
+        </section>
+    </main>
 
-      <button class="btn-primary" type="submit">Buscar</button>
+    <?php require_once "app/views/layouts/footer.php"; ?>
 
-      <div class="rp-export">
-        <a class="btn-outline" id="expCsv" href="#">CSV</a>
-        <a class="btn-outline" id="expPdf" href="#">PDF</a>
-      </div>
-    </form>
+    <script>
+        const tabs = document.querySelectorAll('.rp-tab');
+        const tipoInput = document.getElementById('rpTipo');
+        const expCsv = document.getElementById('expCsv');
+        const expPdf = document.getElementById('expPdf');
+        const inicio = document.getElementById('rpInicio');
+        const fin = document.getElementById('rpFin');
+        const form = document.querySelector('.rp-filters');
 
-    <section class="rp-results" aria-live="polite">
-      <div class="table-wrap">
-        <table class="rp-table">
-          <?php if ($tipo === 'ventas'): ?>
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Folio</th>
-                <th>Cliente</th>
-                <th class="num">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if (empty($rows)): ?>
-                <tr>
-                  <td colspan="4">No hay ventas en este periodo.</td>
-                </tr>
-              <?php else: ?>
-                <?php foreach ($rows as $r): ?>
-                  <tr>
-                    <td><?php echo htmlspecialchars($r['fecha']); ?></td>
-                    <td><?php echo htmlspecialchars($r['compra_id']); ?></td>
-                    <td><?php echo htmlspecialchars($r['cliente']); ?></td>
-                    <td class="num">$<?php echo number_format($r['total'], 2); ?></td>
-                  </tr>
-                <?php endforeach; ?>
-              <?php endif; ?>
-            </tbody>
-            <tfoot>
-              <tr>
-                <th colspan="3" class="right">Total periodo</th>
-                <th class="num">$<?php echo number_format($totalPeriodo, 2); ?></th>
-              </tr>
-            </tfoot>
+        function updateExportLinks() {
+            const tipo = tipoInput.value || 'ventas';
+            const i = inicio.value ? `&inicio=${inicio.value}` : '';
+            const f = fin.value ? `&fin=${fin.value}` : '';
 
-          <?php elseif ($tipo === 'productos'): ?>
-            <thead>
-              <tr>
-                <th>Producto</th>
-                <th class="num">Unidades vendidas</th>
-                <th class="num">Total vendido</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if (empty($rows)): ?>
-                <tr>
-                  <td colspan="3">No hay ventas de productos en este periodo.</td>
-                </tr>
-              <?php else: ?>
-                <?php foreach ($rows as $r): ?>
-                  <tr>
-                    <td><?php echo htmlspecialchars($r['nombre']); ?></td>
-                    <td class="num"><?php echo (int) $r['unidades_vendidas']; ?></td>
-                    <td class="num">$<?php echo number_format($r['total_vendido'], 2); ?></td>
-                  </tr>
-                <?php endforeach; ?>
-              <?php endif; ?>
-            </tbody>
-            <tfoot>
-              <tr>
-                <th colspan="2" class="right">Total periodo</th>
-                <th class="num">$<?php echo number_format($totalPeriodo, 2); ?></th>
-              </tr>
-            </tfoot>
+            expCsv.href = `export-report.php?format=csv&tipo=${tipo}${i}${f}`;
+            expPdf.href = `export-report.php?format=pdf&tipo=${tipo}${i}${f}`;
+        }
 
-          <?php elseif ($tipo === 'clientes'): ?>
-            <thead>
-              <tr>
-                <th>Cliente</th>
-                <th class="num">Número de compras</th>
-                <th class="num">Total gastado</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if (empty($rows)): ?>
-                <tr>
-                  <td colspan="3">No hay compras de clientes en este periodo.</td>
-                </tr>
-              <?php else: ?>
-                <?php foreach ($rows as $r): ?>
-                  <tr>
-                    <td><?php echo htmlspecialchars($r['cliente']); ?></td>
-                    <td class="num"><?php echo (int) $r['num_compras']; ?></td>
-                    <td class="num">$<?php echo number_format($r['total_gastado'], 2); ?></td>
-                  </tr>
-                <?php endforeach; ?>
-              <?php endif; ?>
-            </tbody>
-            <tfoot>
-              <tr>
-                <th colspan="2" class="right">Total periodo</th>
-                <th class="num">$<?php echo number_format($totalPeriodo, 2); ?></th>
-              </tr>
-            </tfoot>
-          <?php endif; ?>
-        </table>
-      </div>
-    </section>
-  </main>
+        tabs.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabs.forEach(b => {
+                    b.classList.remove('is-active');
+                    b.setAttribute('aria-selected', 'false');
+                });
+                btn.classList.add('is-active');
+                btn.setAttribute('aria-selected', 'true');
 
-  <footer class="footer">
-    <p>© Raíz Viva</p>
-  </footer>
-
-  <script>
-    const tabs = document.querySelectorAll('.rp-tab');
-    const tipoInput = document.getElementById('rpTipo');
-    const expCsv = document.getElementById('expCsv');
-    const expPdf = document.getElementById('expPdf');
-    const inicio = document.getElementById('rpInicio');
-    const fin = document.getElementById('rpFin');
-    const form = document.querySelector('.rp-filters');
-
-    function updateExportLinks() {
-      const tipo = tipoInput.value || 'ventas';
-      const i = inicio.value ? `&inicio=${inicio.value}` : '';
-      const f = fin.value ? `&fin=${fin.value}` : '';
-
-      expCsv.href = `export-report.php?format=csv&tipo=${tipo}${i}${f}`;
-      expPdf.href = `export-report.php?format=pdf&tipo=${tipo}${i}${f}`;
-    }
-
-    // Tabs: cambian el tipo y recargan la página
-    tabs.forEach(btn => {
-      btn.addEventListener('click', () => {
-        tabs.forEach(b => {
-          b.classList.remove('is-active');
-          b.setAttribute('aria-selected', 'false');
+                tipoInput.value = btn.dataset.report;
+                updateExportLinks();
+                form.submit();
+            });
         });
-        btn.classList.add('is-active');
-        btn.setAttribute('aria-selected', 'true');
 
-        const tipo = btn.dataset.report;
-        tipoInput.value = tipo;
+        inicio.addEventListener('change', () => {
+            fin.min = inicio.value || '';
+            updateExportLinks();
+        });
 
-        updateExportLinks();
+        fin.addEventListener('change', () => {
+            if (inicio.value && fin.value && fin.value < inicio.value) {
+                alert('La fecha FIN no puede ser menor que INICIO.');
+                fin.value = '';
+            }
+            updateExportLinks();
+        });
 
-        // recargamos la tabla enviando el formulario
-        form.submit();
-      });
-    });
-
-    // Validación de rango de fechas
-    inicio.addEventListener('change', () => {
-      fin.min = inicio.value || '';
-      updateExportLinks();
-    });
-
-    fin.addEventListener('change', () => {
-      if (inicio.value && fin.value && fin.value < inicio.value) {
-        alert('La fecha FIN no puede ser menor que INICIO.');
-        fin.value = '';
-      }
-      updateExportLinks();
-    });
-
-    document.addEventListener('DOMContentLoaded', updateExportLinks);
-  </script>
+        document.addEventListener('DOMContentLoaded', updateExportLinks);
+    </script>
 </body>
 
 </html>

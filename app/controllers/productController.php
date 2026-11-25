@@ -1,13 +1,10 @@
 <?php
-include __DIR__ . "/../config/connectionController.php";
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . "/../config/security.php";
+require_once __DIR__ . "/../config/connectionController.php";
 
 class ProductController
 {
-    private $connection;
+    private ConnectionController $connection;
 
     public function __construct()
     {
@@ -18,8 +15,7 @@ class ProductController
      * MÉTODOS PÚBLICOS (TIENDA)
      * ========================================================= */
 
-    // Listar productos públicos (opcionalmente filtrando por categoría)
-    public function getPublicProducts($categoria_id = null)
+    public function getPublicProducts($categoria_id = null): array
     {
         $conn = $this->connection->connect();
 
@@ -33,12 +29,10 @@ class ProductController
         }
 
         $stmt->execute();
-        $result = $stmt->get_result();
-        return $result->fetch_all(MYSQLI_ASSOC);
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
-    // Obtener un producto público por ID (para producto.php)
-    public function getPublicProductById($producto_id)
+    public function getPublicProductById(int $producto_id): ?array
     {
         $conn = $this->connection->connect();
 
@@ -51,13 +45,10 @@ class ProductController
         $stmt = $conn->prepare($query);
         $stmt->bind_param("i", $producto_id);
         $stmt->execute();
-        $result = $stmt->get_result();
-
-        return $result->fetch_assoc();
+        return $stmt->get_result()->fetch_assoc();
     }
 
-    // Buscar productos por texto en nombre o descripción
-    public function searchProducts($texto, $categoria_id = null)
+    public function searchProducts(string $texto, $categoria_id = null): array
     {
         $conn = $this->connection->connect();
         $like = "%" . $texto . "%";
@@ -76,24 +67,26 @@ class ProductController
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
-
     /* =========================================================
-     * MÉTODOS PARA DUEÑO / ADMIN
+     * MÉTODOS PARA DUEÑO / ADMIN (RBAC ESTRICTO EN SESIÓN)
      * ========================================================= */
 
-    // Crear producto
+    private function isSessionAdmin(): bool
+    {
+        return isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin';
+    }
+
     public function createProduct(
-        $name,
-        $description,
-        $price,
-        $stock,
-        $category_id,
-        $imagePath,
-        $imagePath2,
-        $imagePath3,
-        $usuario_id,
-        $context = 'user' // 'user' o 'admin'
-    ) {
+        string $name,
+        string $description,
+        float $price,
+        int $stock,
+        int $category_id,
+        ?string $imagePath,
+        ?string $imagePath2,
+        ?string $imagePath3,
+        int $usuario_id
+    ): void {
         $conn = $this->connection->connect();
 
         $query = "INSERT INTO producto 
@@ -102,7 +95,6 @@ class ProductController
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo')";
 
         $stmt = $conn->prepare($query);
-
         $stmt->bind_param(
             "ssdisssii",
             $name,
@@ -117,79 +109,62 @@ class ProductController
         );
 
         if ($stmt->execute()) {
-            $isAdmin = (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin') || $context === 'admin';
-
-            if ($isAdmin) {
-                header("Location: ../../productos-admin.php?msg=created");
-            } else {
-                header("Location: ../../mis-productos.php?msg=created");
-            }
+            $redirect = $this->isSessionAdmin()
+                ? "../../productos-admin.php?msg=created"
+                : "../../mis-productos.php?msg=created";
+            header("Location: " . $redirect);
             exit();
-        } else {
-            echo "Error al guardar: " . $stmt->error;
         }
     }
 
-    // Eliminar producto (user o admin)
-    public function deleteProduct($producto_id, $usuario_id, $context = 'user')
+    public function deleteProduct(int $producto_id, int $usuario_id): void
     {
         $conn = $this->connection->connect();
-        $isAdmin = (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin') || $context === 'admin';
+        $isAdmin = $this->isSessionAdmin();
+        $baseDir = dirname(__DIR__, 2) . "/";
 
-        // 1) Obtener info de imágenes
+        // 1) Verificar propiedad y obtener rutas de imágenes
         if ($isAdmin) {
-            $query = "SELECT imagen, imagen_extra1, imagen_extra2 FROM producto 
-                      WHERE producto_id = ?";
-            $stmt = $conn->prepare($query);
+            $stmt = $conn->prepare("SELECT imagen, imagen_extra1, imagen_extra2 FROM producto WHERE producto_id = ?");
             $stmt->bind_param("i", $producto_id);
         } else {
-            $query = "SELECT imagen, imagen_extra1, imagen_extra2 FROM producto 
-                      WHERE producto_id = ? AND usuario_id = ?";
-            $stmt = $conn->prepare($query);
+            $stmt = $conn->prepare("SELECT imagen, imagen_extra1, imagen_extra2 FROM producto WHERE producto_id = ? AND usuario_id = ?");
             $stmt->bind_param("ii", $producto_id, $usuario_id);
         }
 
         $stmt->execute();
-        $result = $stmt->get_result();
-        $producto = $result->fetch_assoc();
+        $producto = $stmt->get_result()->fetch_assoc();
 
-        if ($producto) {
-            if ($producto['imagen'] && file_exists("../../" . $producto['imagen'])) {
-                unlink("../../" . $producto['imagen']);
-            }
-            if ($producto['imagen_extra1'] && file_exists("../../" . $producto['imagen_extra1'])) {
-                unlink("../../" . $producto['imagen_extra1']);
-            }
-            if ($producto['imagen_extra2'] && file_exists("../../" . $producto['imagen_extra2'])) {
-                unlink("../../" . $producto['imagen_extra2']);
-            }
-        }
-
-        // 2) Borrar registro
-        if ($isAdmin) {
-            $query = "DELETE FROM producto WHERE producto_id = ?";
-            $stmt = $conn->prepare($query);
-            $stmt->bind_param("i", $producto_id);
-        } else {
-            $query = "DELETE FROM producto WHERE producto_id = ? AND usuario_id = ?";
-            $stmt = $conn->prepare($query);
-            $stmt->bind_param("ii", $producto_id, $usuario_id);
-        }
-
-        if ($stmt->execute()) {
-            if ($isAdmin) {
-                header("Location: ../../productos-admin.php?msg=deleted");
-            } else {
-                header("Location: ../../mis-productos.php?msg=deleted");
-            }
+        if (!$producto) {
+            header("Location: ../../index.php?error=unauthorized");
             exit();
-        } else {
-            echo "Error al eliminar: " . $stmt->error;
         }
+
+        // 2) Borrar registro primero en BD (evita borrar imágenes si falla llave foránea)
+        if ($isAdmin) {
+            $delStmt = $conn->prepare("DELETE FROM producto WHERE producto_id = ?");
+            $delStmt->bind_param("i", $producto_id);
+        } else {
+            $delStmt = $conn->prepare("DELETE FROM producto WHERE producto_id = ? AND usuario_id = ?");
+            $delStmt->bind_param("ii", $producto_id, $usuario_id);
+        }
+
+        if ($delStmt->execute() && $delStmt->affected_rows > 0) {
+            foreach (['imagen', 'imagen_extra1', 'imagen_extra2'] as $campo) {
+                if (!empty($producto[$campo]) && file_exists($baseDir . $producto[$campo])) {
+                    @unlink($baseDir . $producto[$campo]);
+                }
+            }
+        }
+
+        $redirect = $isAdmin
+            ? "../../productos-admin.php?msg=deleted"
+            : "../../mis-productos.php?msg=deleted";
+        header("Location: " . $redirect);
+        exit();
     }
 
-    // Obtener producto por ID limitado al dueño (para "mis productos")
-    public function getProductById($producto_id, $usuario_id)
+    public function getProductById(int $producto_id, int $usuario_id): ?array
     {
         $conn = $this->connection->connect();
 
@@ -201,16 +176,16 @@ class ProductController
         $stmt = $conn->prepare($query);
         $stmt->bind_param("ii", $producto_id, $usuario_id);
         $stmt->execute();
-        $result = $stmt->get_result();
-
-        return $result->fetch_assoc();
+        return $stmt->get_result()->fetch_assoc();
     }
 
-    // *** NUEVO *** Obtener producto por ID para ADMIN (sin filtrar por usuario)
-    public function getProductByIdAdmin($producto_id)
+    public function getProductByIdAdmin(int $producto_id): ?array
     {
-        $conn = $this->connection->connect();
+        if (!$this->isSessionAdmin()) {
+            return null;
+        }
 
+        $conn = $this->connection->connect();
         $query = "SELECT p.*, c.nombre AS categoria_nombre 
                   FROM producto p
                   LEFT JOIN categoria c ON p.categoria_categoria_id = c.categoria_id
@@ -220,205 +195,185 @@ class ProductController
         $stmt = $conn->prepare($query);
         $stmt->bind_param("i", $producto_id);
         $stmt->execute();
-        $result = $stmt->get_result();
-
-        return $result->fetch_assoc();
+        return $stmt->get_result()->fetch_assoc();
     }
 
-    // Actualizar producto (user o admin)
     public function updateProduct(
-        $producto_id,
-        $usuario_id,
-        $name,
-        $description,
-        $price,
-        $stock,
-        $category_id,
-        $imagePath = null,
-        $imagePath2 = null,
-        $imagePath3 = null,
-        $context = 'user'
-    ) {
+        int $producto_id,
+        int $usuario_id,
+        string $name,
+        string $description,
+        float $price,
+        int $stock,
+        int $category_id,
+        ?string $imagePath = null,
+        ?string $imagePath2 = null,
+        ?string $imagePath3 = null
+    ): void {
         $conn = $this->connection->connect();
-        $isAdmin = (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin') || $context === 'admin';
+        $isAdmin = $this->isSessionAdmin();
+        $baseDir = dirname(__DIR__, 2) . "/";
 
-        // 1) Obtener imágenes actuales
         if ($isAdmin) {
-            $query = "SELECT imagen, imagen_extra1, imagen_extra2 FROM producto 
-                      WHERE producto_id = ?";
-            $stmt = $conn->prepare($query);
+            $stmt = $conn->prepare("SELECT imagen, imagen_extra1, imagen_extra2 FROM producto WHERE producto_id = ?");
             $stmt->bind_param("i", $producto_id);
         } else {
-            $query = "SELECT imagen, imagen_extra1, imagen_extra2 FROM producto 
-                      WHERE producto_id = ? AND usuario_id = ?";
-            $stmt = $conn->prepare($query);
+            $stmt = $conn->prepare("SELECT imagen, imagen_extra1, imagen_extra2 FROM producto WHERE producto_id = ? AND usuario_id = ?");
             $stmt->bind_param("ii", $producto_id, $usuario_id);
         }
 
         $stmt->execute();
-        $result = $stmt->get_result();
-        $old = $result->fetch_assoc();
+        $old = $stmt->get_result()->fetch_assoc();
 
-        if ($old) {
-            if ($imagePath !== null && $old['imagen'] && file_exists("../../" . $old['imagen'])) {
-                unlink("../../" . $old['imagen']);
-            }
-            if ($imagePath2 !== null && $old['imagen_extra1'] && file_exists("../../" . $old['imagen_extra1'])) {
-                unlink("../../" . $old['imagen_extra1']);
-            }
-            if ($imagePath3 !== null && $old['imagen_extra2'] && file_exists("../../" . $old['imagen_extra2'])) {
-                unlink("../../" . $old['imagen_extra2']);
-            }
-        }
-
-        // 2) Construir UPDATE dinámico
-        $updates = ["nombre = ?", "descripcion = ?", "precio = ?", "stock = ?", "categoria_categoria_id = ?"];
-        $types = "ssdii";
-        $params = [$name, $description, $price, $stock, $category_id];
-
-        if ($imagePath !== null) {
-            $updates[] = "imagen = ?";
-            $types .= "s";
-            $params[] = $imagePath;
-        } else {
-            $updates[] = "imagen = ?";
-            $types .= "s";
-            $params[] = $old['imagen'] ?? null;
-        }
-
-        if ($imagePath2 !== null) {
-            $updates[] = "imagen_extra1 = ?";
-            $types .= "s";
-            $params[] = $imagePath2;
-        } else {
-            $updates[] = "imagen_extra1 = ?";
-            $types .= "s";
-            $params[] = $old['imagen_extra1'] ?? null;
-        }
-
-        if ($imagePath3 !== null) {
-            $updates[] = "imagen_extra2 = ?";
-            $types .= "s";
-            $params[] = $imagePath3;
-        } else {
-            $updates[] = "imagen_extra2 = ?";
-            $types .= "s";
-            $params[] = $old['imagen_extra2'] ?? null;
-        }
-
-        // WHERE
-        if ($isAdmin) {
-            $query = "UPDATE producto SET " . implode(", ", $updates) . " WHERE producto_id = ?";
-            $types .= "i";
-            $params[] = $producto_id;
-        } else {
-            $query = "UPDATE producto SET " . implode(", ", $updates) . " 
-                      WHERE producto_id = ? AND usuario_id = ?";
-            $types .= "ii";
-            $params[] = $producto_id;
-            $params[] = $usuario_id;
-        }
-
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param($types, ...$params);
-
-        if ($stmt->execute()) {
-            if ($isAdmin) {
-                header("Location: ../../productos-admin.php?msg=updated");
-            } else {
-                header("Location: ../../mis-productos.php?msg=updated");
-            }
+        if (!$old) {
+            header("Location: ../../index.php?error=unauthorized");
             exit();
+        }
+
+        if ($imagePath !== null && !empty($old['imagen']) && file_exists($baseDir . $old['imagen'])) {
+            @unlink($baseDir . $old['imagen']);
+        }
+        if ($imagePath2 !== null && !empty($old['imagen_extra1']) && file_exists($baseDir . $old['imagen_extra1'])) {
+            @unlink($baseDir . $old['imagen_extra1']);
+        }
+        if ($imagePath3 !== null && !empty($old['imagen_extra2']) && file_exists($baseDir . $old['imagen_extra2'])) {
+            @unlink($baseDir . $old['imagen_extra2']);
+        }
+
+        $img1Final = $imagePath ?? ($old['imagen'] ?? null);
+        $img2Final = $imagePath2 ?? ($old['imagen_extra1'] ?? null);
+        $img3Final = $imagePath3 ?? ($old['imagen_extra2'] ?? null);
+
+        if ($isAdmin) {
+            $query = "UPDATE producto SET nombre = ?, descripcion = ?, precio = ?, stock = ?, categoria_categoria_id = ?, imagen = ?, imagen_extra1 = ?, imagen_extra2 = ? WHERE producto_id = ?";
+            $stmtUpd = $conn->prepare($query);
+            $stmtUpd->bind_param("ssdiisssi", $name, $description, $price, $stock, $category_id, $img1Final, $img2Final, $img3Final, $producto_id);
         } else {
-            echo "Error al actualizar: " . $stmt->error;
+            $query = "UPDATE producto SET nombre = ?, descripcion = ?, precio = ?, stock = ?, categoria_categoria_id = ?, imagen = ?, imagen_extra1 = ?, imagen_extra2 = ? WHERE producto_id = ? AND usuario_id = ?";
+            $stmtUpd = $conn->prepare($query);
+            $stmtUpd->bind_param("ssdiisssii", $name, $description, $price, $stock, $category_id, $img1Final, $img2Final, $img3Final, $producto_id, $usuario_id);
+        }
+
+        if ($stmtUpd->execute()) {
+            $redirect = $isAdmin
+                ? "../../productos-admin.php?msg=updated"
+                : "../../mis-productos.php?msg=updated";
+            header("Location: " . $redirect);
+            exit();
         }
     }
 }
 
-/* =======================
- * FUNCIÓN PARA SUBIR IMG
- * ======================= */
-
-function uploadImage($fileInputName)
+/* =========================================================
+ * FUNCIÓN SEGURA PARA SUBIDA DE IMÁGENES
+ * ========================================================= */
+function uploadImage(string $fileInputName): ?string
 {
-    if (!empty($_FILES[$fileInputName]["name"])) {
-
-        $uploads = "../../Assets/img/uploads/";
-        if (!is_dir($uploads)) {
-            mkdir($uploads, 0777, true);
-        }
-
-        $filename = uniqid() . "_" . basename($_FILES[$fileInputName]["name"]);
-        $destino = $uploads . $filename;
-
-        if (move_uploaded_file($_FILES[$fileInputName]["tmp_name"], $destino)) {
-            return "Assets/img/uploads/" . $filename;
-        }
+    if (empty($_FILES[$fileInputName]["name"]) || $_FILES[$fileInputName]["error"] !== UPLOAD_ERR_OK) {
+        return null;
     }
+
+    $fileTmp  = $_FILES[$fileInputName]["tmp_name"];
+    $fileSize = (int) $_FILES[$fileInputName]["size"];
+    $fileName = $_FILES[$fileInputName]["name"];
+
+    // 1. Validar extensión en lista blanca estricta PRIMERO
+    $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+    $allowedExts = ['jpg', 'jpeg', 'png', 'webp'];
+    if (!in_array($ext, $allowedExts, true)) {
+        throw new RuntimeException("Extensión no permitida. Solo se aceptan imágenes JPG, PNG o WEBP.");
+    }
+
+    // 2. Validar tamaño máximo: 2 MB
+    $maxBytes = 2097152;
+    if ($fileSize <= 0 || $fileSize > $maxBytes) {
+        throw new RuntimeException("El archivo excede el tamaño máximo permitido de 2 MB.");
+    }
+
+    // 3. Validar firma MIME real del contenido binario del archivo
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mimeType = $finfo->file($fileTmp);
+    $allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!in_array($mimeType, $allowedMimes, true)) {
+        throw new RuntimeException("El contenido del archivo no corresponde a una imagen válida.");
+    }
+
+    // 4. Crear directorio con permisos seguros 0755 y nombre aleatorio criptográfico
+    $uploadsDir = dirname(__DIR__, 2) . "/Assets/img/uploads/";
+    if (!is_dir($uploadsDir)) {
+        mkdir($uploadsDir, 0755, true);
+    }
+
+    $safeFilename = bin2hex(random_bytes(16)) . "." . $ext;
+    $destino = $uploadsDir . $safeFilename;
+
+    if (move_uploaded_file($fileTmp, $destino)) {
+        return "Assets/img/uploads/" . $safeFilename;
+    }
+
     return null;
 }
 
-
-
-/* =======================
- * ROUTER POST
- * ======================= */
-
+/* =========================================================
+ * ROUTER POST PROTEGIDO
+ * ========================================================= */
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-
     if (!isset($_SESSION['usuario_id'])) {
-        die("Error: usuario no autenticado.");
+        header("Location: ../../login.php?error=login_required");
+        exit();
+    }
+
+    if (!verifyCsrfToken($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        die("Error de seguridad: Token CSRF inválido o expirado.");
     }
 
     $pc = new ProductController();
     $usuario_id = (int) $_SESSION['usuario_id'];
-    $context = $_POST["context"] ?? 'user'; // 'admin' o 'user'
+    $action = $_POST["action"] ?? '';
 
-    if ($_POST["action"] === "create_product") {
+    try {
+        if ($action === "create_product") {
+            $imagePath  = uploadImage("photo_main");
+            $imagePath2 = uploadImage("photo_extra1");
+            $imagePath3 = uploadImage("photo_extra2");
 
-        $imagePath = uploadImage("photo_main");
-        $imagePath2 = uploadImage("photo_extra1");
-        $imagePath3 = uploadImage("photo_extra2");
+            $pc->createProduct(
+                trim($_POST["name"] ?? ''),
+                trim($_POST["description"] ?? ''),
+                (float) ($_POST["price"] ?? 0),
+                (int) ($_POST["stock"] ?? 0),
+                (int) ($_POST["category"] ?? 0),
+                $imagePath,
+                $imagePath2,
+                $imagePath3,
+                $usuario_id
+            );
+        } elseif ($action === "delete_product") {
+            $pc->deleteProduct((int) ($_POST["producto_id"] ?? 0), $usuario_id);
+        } elseif ($action === "update_product") {
+            $imagePath  = uploadImage("photo_main");
+            $imagePath2 = uploadImage("photo_extra1");
+            $imagePath3 = uploadImage("photo_extra2");
 
-        $pc->createProduct(
-            $_POST["name"],
-            $_POST["description"],
-            $_POST["price"],
-            $_POST["stock"],
-            intval($_POST["category"]),
-            $imagePath,
-            $imagePath2,
-            $imagePath3,
-            $usuario_id,
-            $context
-        );
-
-    } elseif ($_POST["action"] === "delete_product") {
-
-        $pc->deleteProduct(
-            intval($_POST["producto_id"]),
-            $usuario_id,
-            $context
-        );
-
-    } elseif ($_POST["action"] === "update_product") {
-
-        $imagePath = uploadImage("photo_main");
-        $imagePath2 = uploadImage("photo_extra1");
-        $imagePath3 = uploadImage("photo_extra2");
-
-        $pc->updateProduct(
-            intval($_POST["producto_id"]),
-            $usuario_id,
-            $_POST["name"],
-            $_POST["description"],
-            $_POST["price"],
-            $_POST["stock"],
-            intval($_POST["category"]),
-            $imagePath,
-            $imagePath2,
-            $imagePath3,
-            $context
-        );
+            $pc->updateProduct(
+                (int) ($_POST["producto_id"] ?? 0),
+                $usuario_id,
+                trim($_POST["name"] ?? ''),
+                trim($_POST["description"] ?? ''),
+                (float) ($_POST["price"] ?? 0),
+                (int) ($_POST["stock"] ?? 0),
+                (int) ($_POST["category"] ?? 0),
+                $imagePath,
+                $imagePath2,
+                $imagePath3
+            );
+        }
+    } catch (RuntimeException $e) {
+        $backPage = (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin')
+            ? "../../agregar-producto-admin.php?error=" . urlencode($e->getMessage())
+            : "../../agregar-producto.php?error=" . urlencode($e->getMessage());
+        header("Location: " . $backPage);
+        exit();
     }
 }

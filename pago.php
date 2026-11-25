@@ -1,45 +1,36 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . "/app/config/security.php";
+requireLogin();
 
-if (!isset($_SESSION['usuario_id'])) {
-    header("Location: login.php?error=login_required");
-    exit;
-}
-
-// Si no es una recarga con mensaje de éxito/error, exigimos los datos del POST
 if (!isset($_GET['msg'])) {
     if ($_SERVER["REQUEST_METHOD"] !== "POST" || empty($_POST['nombre'])) {
         header("Location: confirmar-compra.php");
-        exit;
+        exit();
+    }
+    if (!verifyCsrfToken($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        die("Error de seguridad: Token CSRF inválido.");
     }
 }
 
-require_once "app/controllers/cartController.php";
+require_once __DIR__ . "/app/controllers/cartController.php";
 
 $cart = new CartController();
 $usuario_id = (int) $_SESSION['usuario_id'];
 $items = $cart->getCartItems($usuario_id);
 
-// Si el carrito está vacío, PERO el usuario no acaba de hacer una compra exitosa, lo regresamos
 if (count($items) === 0 && (!isset($_GET['msg']) || $_GET['msg'] !== 'success')) {
     header("Location: carrito.php?msg=empty");
-    exit;
+    exit();
 }
 
-// Calcular totales
 $subtotal = 0;
 foreach ($items as $item) {
     $subtotal += $item['precio'] * $item['cantidad'];
 }
-$envio = 0.00; // Puedes cambiar esto si en el futuro cobras envío
+$envio = 0.00;
 $total = $subtotal + $envio;
 
-$logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
-$cartCount = $cart->getCartCount($usuario_id);
-
-// Recibir los datos de envío del formulario anterior
 $nombre_envio = $_POST['nombre'] ?? '';
 $direccion_envio = $_POST['direccion'] ?? '';
 $ciudad_envio = $_POST['ciudad'] ?? '';
@@ -55,22 +46,17 @@ $telefono_envio = $_POST['telefono'] ?? '';
     <link rel="stylesheet" href="Assets/styles/global.css?v=2" />
     <link rel="stylesheet" href="Assets/styles/checkout.css" />
     <style>
-        /* Estilos generales de layout */
         .payment-layout {
             display: flex;
             gap: 2rem;
             align-items: flex-start;
         }
-
         .payment-form-col {
             flex: 1.5;
         }
-
         .payment-summary-col {
             flex: 1;
         }
-
-        /* MAGIA CSS PARA ARREGLAR LOS INPUTS (Figma Style) */
         .payment-form-col label {
             display: block;
             margin-bottom: 5px;
@@ -78,7 +64,6 @@ $telefono_envio = $_POST['telefono'] ?? '';
             font-weight: 600;
             color: #333;
         }
-
         .payment-form-col input,
         .payment-form-col select {
             display: block;
@@ -87,46 +72,36 @@ $telefono_envio = $_POST['telefono'] ?? '';
             padding: 10px 14px;
             border: 1px solid #ccc;
             border-radius: 8px;
-            /* Bordes redondeados del Figma */
             margin-bottom: 16px;
             font-family: inherit;
         }
-
-        /* Grids para las columnas */
         .grid-3-cols {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr;
             gap: 1rem;
             margin-bottom: 16px;
         }
-
         .grid-2-cols {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1rem;
             margin-bottom: 16px;
         }
-
-        /* Quitar margen inferior dentro de los grids para alineación perfecta */
         .grid-3-cols input,
         .grid-2-cols input {
             margin-bottom: 0;
         }
-
-        /* Estilos del resumen (Derecha) */
         .summary-row {
             display: flex;
             justify-content: space-between;
             margin-bottom: 1rem;
             font-size: 1.1rem;
         }
-
         .summary-total {
             border-top: 1px solid #ccc;
             padding-top: 1rem;
             font-weight: bold;
         }
-
         .btn-outline-danger {
             background: transparent;
             border: 2px solid #e74c3c;
@@ -136,7 +111,6 @@ $telefono_envio = $_POST['telefono'] ?? '';
             text-decoration: none;
             font-weight: bold;
         }
-
         .btn-pay {
             background: #e07a5f;
             border: none;
@@ -158,12 +132,13 @@ $telefono_envio = $_POST['telefono'] ?? '';
                 <p>Ingrese los datos de su método de pago</p>
                 <br>
                 <form action="app/controllers/cartController.php" method="POST" id="final-checkout-form">
+                    <?php echo csrfField(); ?>
                     <input type="hidden" name="action" value="checkout">
 
-                    <input type="hidden" name="nombre" value="<?php echo htmlspecialchars($nombre_envio); ?>">
-                    <input type="hidden" name="direccion" value="<?php echo htmlspecialchars($direccion_envio); ?>">
-                    <input type="hidden" name="ciudad" value="<?php echo htmlspecialchars($ciudad_envio); ?>">
-                    <input type="hidden" name="telefono" value="<?php echo htmlspecialchars($telefono_envio); ?>">
+                    <input type="hidden" name="nombre" value="<?php echo htmlspecialchars($nombre_envio, ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="direccion" value="<?php echo htmlspecialchars($direccion_envio, ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="ciudad" value="<?php echo htmlspecialchars($ciudad_envio, ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="telefono" value="<?php echo htmlspecialchars($telefono_envio, ENT_QUOTES, 'UTF-8'); ?>">
 
                     <label for="correo">Correo</label>
                     <input type="email" id="correo" name="correo" placeholder="Tucorreo@ejemplo.com" required>
@@ -174,8 +149,7 @@ $telefono_envio = $_POST['telefono'] ?? '';
                     <div class="grid-3-cols">
                         <div>
                             <label for="tarjeta">Número de tarjeta</label>
-                            <input type="text" id="tarjeta" name="tarjeta" placeholder="1111 1111 1111 1111" required
-                                maxlength="19">
+                            <input type="text" id="tarjeta" name="tarjeta" placeholder="1111 1111 1111 1111" required maxlength="19">
                         </div>
                         <div>
                             <label for="cvv">CVV</label>
@@ -183,8 +157,7 @@ $telefono_envio = $_POST['telefono'] ?? '';
                         </div>
                         <div>
                             <label for="expiracion">Expiración</label>
-                            <input type="text" id="expiracion" name="expiracion" placeholder="MM/AA" required
-                                maxlength="5">
+                            <input type="text" id="expiracion" name="expiracion" placeholder="MM/AA" required maxlength="5">
                         </div>
                     </div>
 
@@ -275,104 +248,79 @@ $telefono_envio = $_POST['telefono'] ?? '';
 
     </main>
 
-    <footer class="footer">
-        <p>© Raíz Viva</p>
-    </footer>
+    <?php require_once "app/views/layouts/footer.php"; ?>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const overlay = document.getElementById("success-modal");
+            const okBtn = document.getElementById("modal-ok-btn");
+
+            if (overlay && okBtn) {
+                okBtn.addEventListener("click", function () {
+                    overlay.classList.remove("is-visible");
+                    document.body.classList.remove("modal-open");
+                    window.location.href = 'index.php';
+                });
+            }
+
+            const tarjetaInput = document.getElementById('tarjeta');
+            if (tarjetaInput) {
+                tarjetaInput.addEventListener('input', function (e) {
+                    let valor = e.target.value.replace(/\D/g, '');
+                    valor = valor.replace(/(\d{4})(?=\d)/g, '$1 ');
+                    e.target.value = valor;
+                });
+            }
+
+            const expInput = document.getElementById('expiracion');
+            if (expInput) {
+                expInput.addEventListener('input', function (e) {
+                    let valor = e.target.value.replace(/\D/g, '');
+                    if (valor.length >= 3) {
+                        valor = valor.slice(0, 2) + '/' + valor.slice(2, 4);
+                    }
+                    e.target.value = valor;
+                    e.target.setCustomValidity("");
+                });
+
+                expInput.addEventListener('blur', function (e) {
+                    const valor = e.target.value;
+                    if (valor.length === 5) {
+                        const mesIngresado = parseInt(valor.substring(0, 2), 10);
+                        const anioIngresado = parseInt(valor.substring(3, 5), 10);
+
+                        const fechaActual = new Date();
+                        const mesActual = fechaActual.getMonth() + 1;
+                        const anioActual = parseInt(fechaActual.getFullYear().toString().slice(-2), 10);
+
+                        let esValido = true;
+                        if (mesIngresado < 1 || mesIngresado > 12) {
+                            esValido = false;
+                        } else if (anioIngresado < anioActual) {
+                            esValido = false;
+                        } else if (anioIngresado === anioActual && mesIngresado < mesActual) {
+                            esValido = false;
+                        }
+
+                        if (!esValido) {
+                            e.target.setCustomValidity("La fecha de expiración no es válida o la tarjeta ya expiró.");
+                            e.target.reportValidity();
+                        }
+                    } else if (valor.length > 0 && valor.length < 5) {
+                        e.target.setCustomValidity("Ingresa la fecha completa en formato MM/AA.");
+                        e.target.reportValidity();
+                    }
+                });
+            }
+
+            const titularInput = document.getElementById('titular');
+            if (titularInput) {
+                titularInput.addEventListener('input', function (e) {
+                    e.target.value = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\']/g, '');
+                });
+            }
+        });
+    </script>
 </body>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        // --- CÓDIGO DEL MODAL QUE YA TENÍAS ---
-        const overlay = document.getElementById("success-modal");
-        const okBtn = document.getElementById("modal-ok-btn");
-
-        if (overlay && okBtn) {
-            okBtn.addEventListener("click", function () {
-                overlay.classList.remove("is-visible");
-                document.body.classList.remove("modal-open");
-                window.location.href = 'index.php';
-            });
-        }
-
-        // --- NUEVO CÓDIGO PARA AUTO-FORMATO DE TARJETA ---
-
-        // 1. Formato para el Número de Tarjeta (agrega espacios cada 4 números)
-        const tarjetaInput = document.getElementById('tarjeta');
-        if (tarjetaInput) {
-            tarjetaInput.addEventListener('input', function (e) {
-                // Borra todo lo que no sea un número
-                let valor = e.target.value.replace(/\D/g, '');
-                // Agrega un espacio después de cada grupo de 4 números
-                valor = valor.replace(/(\d{4})(?=\d)/g, '$1 ');
-                e.target.value = valor;
-            });
-        }
-
-        // 2. Formato y Validación para la Expiración (MM/AA)
-        const expInput = document.getElementById('expiracion');
-        if (expInput) {
-            // Evento 1: Da el formato (la diagonal) mientras el usuario escribe
-            expInput.addEventListener('input', function (e) {
-                let valor = e.target.value.replace(/\D/g, '');
-                if (valor.length >= 3) {
-                    valor = valor.slice(0, 2) + '/' + valor.slice(2, 4);
-                }
-                e.target.value = valor;
-
-                // Limpia cualquier error previo mientras el usuario corrige
-                e.target.setCustomValidity("");
-            });
-
-            // Evento 2: Valida la fecha exacta cuando el usuario sale del campo
-            expInput.addEventListener('blur', function (e) {
-                const valor = e.target.value;
-
-                // Solo validamos si el campo está completo (MM/AA son 5 caracteres)
-                if (valor.length === 5) {
-                    const mesIngresado = parseInt(valor.substring(0, 2), 10);
-                    const anioIngresado = parseInt(valor.substring(3, 5), 10);
-
-                    const fechaActual = new Date();
-                    const mesActual = fechaActual.getMonth() + 1; // getMonth() devuelve 0-11, así que sumamos 1
-                    const anioActual = parseInt(fechaActual.getFullYear().toString().slice(-2), 10); // Saca los últimos 2 dígitos del año
-
-                    let esValido = true;
-
-                    // a) Validar que el mes exista (01 a 12)
-                    if (mesIngresado < 1 || mesIngresado > 12) {
-                        esValido = false;
-                    }
-                    // b) Validar que el año no sea del pasado
-                    else if (anioIngresado < anioActual) {
-                        esValido = false;
-                    }
-                    // c) Validar que, si es el año actual, el mes no haya pasado
-                    else if (anioIngresado === anioActual && mesIngresado < mesActual) {
-                        esValido = false;
-                    }
-
-                    // Si falló alguna regla, activamos el error del navegador
-                    if (!esValido) {
-                        e.target.setCustomValidity("La fecha de expiración no es válida o la tarjeta ya expiró.");
-                        e.target.reportValidity(); // Muestra el mensaje en pantalla
-                    }
-                } else if (valor.length > 0 && valor.length < 5) {
-                    // Si lo dejó a medias (ej. "12/2")
-                    e.target.setCustomValidity("Ingresa la fecha completa en formato MM/AA.");
-                    e.target.reportValidity();
-                }
-            });
-        }
-
-        // 3. Formato para el Nombre (Solo letras, acentos, espacios, guiones y apóstrofes)
-        const titularInput = document.getElementById('titular');
-        if (titularInput) {
-            titularInput.addEventListener('input', function (e) {
-                // Esta expresión regular reemplaza por "nada" cualquier cosa que NO sea:
-                // a-z, A-Z, vocales con acento, ñ, ü, espacios (\s), guiones (\-) o apóstrofes (')
-                e.target.value = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\']/g, '');
-            });
-        }
-    });
-</script>
 
 </html>

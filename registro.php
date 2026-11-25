@@ -10,32 +10,26 @@
 
 <body>
     <main class="login-container">
-
-        <!-- SECCIÓN IZQUIERDA (FORMULARIO) -->
         <section class="form-section">
-
             <div class="brand">
                 <img src="Assets/img/logo.png" alt="Logo Raíz Viva">
             </div>
 
             <h2>REGISTRO</h2>
 
-            <!-- ALERTAS -->
             <?php if (isset($_GET['error'])): ?>
-                <?php if ($_GET['error'] == 'email'): ?>
+                <?php if ($_GET['error'] === 'email'): ?>
                     <div class="alert alert-error">
                         Este correo ya está registrado.
                     </div>
-                <?php elseif ($_GET['error'] == 'db'): ?>
+                <?php elseif ($_GET['error'] === 'db'): ?>
                     <div class="alert alert-error">
                         Ocurrió un error al registrar tu cuenta. Inténtalo más tarde.
                     </div>
                 <?php endif; ?>
             <?php endif; ?>
-            <!-- FIN ALERTAS -->
 
             <form action="app/controllers/usersController.php" method="POST" onsubmit="return validateRegister()">
-
                 <label for="nombre">Nombre(s)</label>
                 <input type="text" id="nombre" name="nombre" placeholder="Nombre(s)" required maxlength="100">
 
@@ -51,8 +45,7 @@
                     oninput="this.setCustomValidity('')">
 
                 <label for="confirm_password">Confirmar Contraseña</label>
-                <input type="password" id="confirm_password" name="confirm_password" placeholder="Repite tu contraseña"
-                    required>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Repite tu contraseña" required>
 
                 <label for="direccion">Dirección</label>
                 <input type="text" id="direccion" name="direccion" placeholder="Dirección" required maxlength="255">
@@ -65,17 +58,15 @@
                 <button type="submit">REGISTRARSE</button>
 
                 <input type="hidden" name="action" value="create_user">
-
             </form>
-
         </section>
 
-        <!-- SECCIÓN DERECHA (IMAGEN) -->
         <section class="image-section">
             <img src="Assets/img/img-logo.png" alt="Plantas decorativas">
         </section>
+    </main>
 
-        <script src="./Assets/js/validaciones.js"></script>
+    <script src="./Assets/js/validaciones.js"></script>
 </body>
 
 </html>

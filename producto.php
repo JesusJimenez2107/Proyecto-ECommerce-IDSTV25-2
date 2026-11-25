@@ -1,51 +1,23 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . "/app/config/security.php";
+require_once __DIR__ . "/app/controllers/productController.php";
 
-require_once "app/controllers/productController.php";
-$pc = new ProductController();
-
-$categoria_id = isset($_GET['cat']) && is_numeric($_GET['cat']) ? (int)$_GET['cat'] : null;
-$busqueda = isset($_GET['search']) && !empty(trim($_GET['search'])) ? trim($_GET['search']) : null;
-
-if ($busqueda) {
-    $productos = $pc->searchProducts($busqueda, $categoria_id);
-} else {
-    $productos = $pc->getPublicProducts($categoria_id);
-}
-
-$logged = isset($_SESSION['email']) && !empty($_SESSION['email']);
-$cartCount = 0;
-
-if (isset($_SESSION['usuario_id'])) {
-    require_once "app/controllers/cartController.php";
-    $cartCtrl = new CartController();
-    $cartCount = $cartCtrl->getCartCount((int) $_SESSION['usuario_id']);
-}
-
-// Validar ID de producto
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     header("Location: productos.php");
-    exit;
+    exit();
 }
 
+$pc = new ProductController();
 $producto_id = (int) $_GET['id'];
 $producto = $pc->getPublicProductById($producto_id);
 
 if ($producto) {
     $titulo = $producto['nombre'];
-
-    // Galería: armar arreglo de imágenes disponibles
-    $imagenes = [];
-    if (!empty($producto['imagen']))
-        $imagenes[] = $producto['imagen'];
-    if (!empty($producto['imagen_extra1']))
-        $imagenes[] = $producto['imagen_extra1'];
-    if (!empty($producto['imagen_extra2']))
-        $imagenes[] = $producto['imagen_extra2'];
-
-    // Si no hay ninguna, usar placeholder
+    $imagenes = array_values(array_filter([
+        $producto['imagen'] ?? null,
+        $producto['imagen_extra1'] ?? null,
+        $producto['imagen_extra2'] ?? null,
+    ]));
     if (empty($imagenes)) {
         $imagenes[] = "Assets/img/placeholder.jpg";
     }
@@ -59,109 +31,14 @@ if ($producto) {
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title><?php echo htmlspecialchars($titulo); ?> – Raíz Viva</title>
-
+    <title><?php echo htmlspecialchars($titulo, ENT_QUOTES, 'UTF-8'); ?> – Raíz Viva</title>
     <link rel="stylesheet" href="Assets/styles/global.css?v=2" />
     <link rel="stylesheet" href="Assets/styles/product-detail.css" />
 </head>
 
 <body>
 
-    <header class="topbar">
-        <div class="topbar__inner">
-            <a class="brand" href="index.php">
-                <img src="Assets/img/logo.png" alt="Raíz Viva" />
-            </a>
-
-            <div class="nav-dropdown">
-                <button class="nav-dropbtn" id="btnProductos" aria-haspopup="true" aria-expanded="false"
-                    aria-controls="menuProductos">
-                    Productos
-                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                        <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" />
-                    </svg>
-                </button>
-
-                <nav class="nav-menu" id="menuProductos" role="menu" hidden>
-                    <a role="menuitem" href="productos.php?cat=1" class="nav-menu__item">
-                        Plantas de interior
-                    </a>
-
-                    <a role="menuitem" href="productos.php?cat=2" class="nav-menu__item">
-                        Plantas de exterior
-                    </a>
-
-                    <a role="menuitem" href="productos.php?cat=3" class="nav-menu__item">
-                        Bajo mantenimiento
-                    </a>
-
-                    <a role="menuitem" href="productos.php?cat=4" class="nav-menu__item">
-                        Aromáticas y comestibles
-                    </a>
-
-                    <a role="menuitem" href="productos.php?cat=5" class="nav-menu__item">
-                        Macetas y accesorios
-                    </a>
-
-                    <a role="menuitem" href="productos.php?cat=6" class="nav-menu__item">
-                        Cuidados y bienestar
-                    </a>
-                </nav>
-            </div>
-
-            <form action="productos.php" method="GET" class="search" role="search">
-                <input type="search" name="search" placeholder="Buscar" aria-label="Buscar"
-                    value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
-                <button type="submit" aria-label="Buscar">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#586a58" stroke-width="2">
-                        <circle cx="11" cy="11" r="7" />
-                        <path d="m20 20-3.5-3.5" />
-                    </svg>
-                </button>
-            </form>
-
-            <div class="actions">
-
-                <?php if ($logged): ?>
-                    <a href="mi-cuenta.php" class="action">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                            <path d="M20 21a8 8 0 1 0-16 0" />
-                            <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        <span>
-                            <?php
-                            if (isset($_SESSION['nombre']) && !empty($_SESSION['nombre'])) {
-                                $primerNombre = explode(' ', trim($_SESSION['nombre']))[0];
-                                echo htmlspecialchars(ucfirst(strtolower($primerNombre)));
-                            } else {
-                                echo 'Mi cuenta';
-                            }
-                            ?>
-                        </span>
-                    </a>
-                <?php else: ?>
-                    <a href="login.php" class="action">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                            <path d="M20 21a8 8 0 1 0-16 0" />
-                            <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        <span>Ingresar</span>
-                    </a>
-                <?php endif; ?>
-
-
-                <a href="carrito.php" class="action">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2">
-                        <circle cx="10" cy="20" r="1"></circle>
-                        <circle cx="18" cy="20" r="1"></circle>
-                        <path d="M2 2h3l2.2 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6"></path>
-                    </svg>
-                    <span><?php echo $cartCount; ?></span>
-                </a>
-            </div>
-        </div>
-    </header>
+    <?php require_once "app/views/layouts/header.php"; ?>
 
     <main class="page">
         <?php if (!$producto): ?>
@@ -180,7 +57,7 @@ if ($producto) {
             <nav class="breadcrumb" aria-label="Breadcrumb">
                 <a href="index.php">Inicio</a> ›
                 <a href="productos.php">Productos</a> ›
-                <span><?php echo htmlspecialchars($producto['nombre']); ?></span>
+                <span><?php echo htmlspecialchars($producto['nombre'], ENT_QUOTES, 'UTF-8'); ?></span>
             </nav>
 
             <section class="product-detail">
@@ -189,27 +66,27 @@ if ($producto) {
                         <?php foreach ($imagenes as $i => $img): ?>
                             <button class="pd-thumb <?php echo $i === 0 ? 'is-active' : ''; ?>"
                                 aria-label="Vista <?php echo $i + 1; ?>">
-                                <img src="<?php echo htmlspecialchars($img); ?>"
-                                    alt="<?php echo htmlspecialchars($producto['nombre']); ?> vista <?php echo $i + 1; ?>">
+                                <img src="<?php echo htmlspecialchars($img, ENT_QUOTES, 'UTF-8'); ?>"
+                                    alt="<?php echo htmlspecialchars($producto['nombre'], ENT_QUOTES, 'UTF-8'); ?> vista <?php echo $i + 1; ?>">
                             </button>
                         <?php endforeach; ?>
                     </div>
 
                     <figure class="pd-main">
-                        <img src="<?php echo htmlspecialchars($imagenes[0]); ?>"
-                            alt="<?php echo htmlspecialchars($producto['nombre']); ?>">
+                        <img src="<?php echo htmlspecialchars($imagenes[0], ENT_QUOTES, 'UTF-8'); ?>"
+                            alt="<?php echo htmlspecialchars($producto['nombre'], ENT_QUOTES, 'UTF-8'); ?>">
                     </figure>
                 </aside>
 
                 <article class="pd-panel">
                     <header class="pd-head">
                         <h1 class="pd-title">
-                            <?php echo strtoupper(htmlspecialchars($producto['nombre'])); ?>
+                            <?php echo strtoupper(htmlspecialchars($producto['nombre'], ENT_QUOTES, 'UTF-8')); ?>
                         </h1>
                         <p class="pd-sub">
                             <?php
                             echo !empty($producto['categoria_nombre'])
-                                ? htmlspecialchars($producto['categoria_nombre'])
+                                ? htmlspecialchars($producto['categoria_nombre'], ENT_QUOTES, 'UTF-8')
                                 : "Producto";
                             ?>
                         </p>
@@ -221,7 +98,7 @@ if ($producto) {
                     <p class="pd-desc">
                         <?php
                         if (!empty($producto['descripcion'])) {
-                            echo nl2br(htmlspecialchars($producto['descripcion']));
+                            echo nl2br(htmlspecialchars($producto['descripcion'], ENT_QUOTES, 'UTF-8'));
                         } else {
                             echo "Este producto aún no tiene descripción detallada.";
                         }
@@ -242,8 +119,9 @@ if ($producto) {
                             </div>
 
                             <form action="app/controllers/cartController.php" method="POST" class="pd-add-form">
+                                <?php echo csrfField(); ?>
                                 <input type="hidden" name="action" value="add_to_cart">
-                                <input type="hidden" name="producto_id" value="<?php echo $producto['producto_id']; ?>">
+                                <input type="hidden" name="producto_id" value="<?php echo (int) $producto['producto_id']; ?>">
                                 <input type="hidden" name="cantidad" value="1" class="qty-hidden">
                                 <button type="submit" class="btn pd-add">Agregar al carrito</button>
                             </form>
@@ -279,13 +157,10 @@ if ($producto) {
         <?php endif; ?>
     </main>
 
-    <footer class="footer">
-        <p>© Raíz Viva</p>
-    </footer>
+    <?php require_once "app/views/layouts/footer.php"; ?>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Galería
             const thumbs = document.querySelectorAll('.pd-thumb');
             const mainImg = document.querySelector('.pd-main img');
 
@@ -304,7 +179,6 @@ if ($producto) {
                 });
             }
 
-            // Cantidad
             const qtyContainer = document.querySelector('.pd-qty');
             const qtyInput = document.querySelector('.qty-input');
             const qtyHidden = document.querySelector('.qty-hidden');
@@ -337,8 +211,7 @@ if ($producto) {
 
                     if (isNaN(val) || val < 1) {
                         val = 1;
-                    }
-                    else if (val > maxStock) {
+                    } else if (val > maxStock) {
                         val = maxStock;
                         alert("Solo hay " + maxStock + " piezas disponibles de este producto.");
                     }

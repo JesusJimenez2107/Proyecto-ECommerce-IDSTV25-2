@@ -1,229 +1,145 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-include __DIR__ . "/../config/connectionController.php";
+require_once __DIR__ . "/../config/security.php";
+require_once __DIR__ . "/../config/connectionController.php";
 
 class CartController
 {
-    private $connection;
+    private ConnectionController $connection;
 
     public function __construct()
     {
         $this->connection = new ConnectionController();
     }
 
-    // Agregar al carrito (Verificando que no sobrepase el stock)
-    public function addToCart($usuario_id, $producto_id, $cantidad)
+    public function addToCart(int $usuario_id, int $producto_id, int $cantidad): void
     {
         $conn = $this->connection->connect();
 
-        // 1. Consultar el stock real disponible en la base de datos
-        $qStock = "SELECT stock FROM producto WHERE producto_id = ?";
-        $sStmt = $conn->prepare($qStock);
+        $sStmt = $conn->prepare("SELECT stock FROM producto WHERE producto_id = ?");
         $sStmt->bind_param("i", $producto_id);
         $sStmt->execute();
         $resStock = $sStmt->get_result()->fetch_assoc();
         $stockDisponible = $resStock ? (int) $resStock['stock'] : 0;
 
-        // 2. Ver si ya existe este producto en el carrito de este usuario
-        $query = "SELECT carrito_id, cantidad 
-                  FROM carrito 
-                  WHERE usuario_usuario_id = ? AND producto_producto_id = ?";
-        $stmt = $conn->prepare($query);
+        if ($stockDisponible <= 0) {
+            return;
+        }
+
+        $stmt = $conn->prepare("SELECT carrito_id, cantidad FROM carrito WHERE usuario_usuario_id = ? AND producto_producto_id = ?");
         $stmt->bind_param("ii", $usuario_id, $producto_id);
         $stmt->execute();
-        $result = $stmt->get_result();
-        $row = $result->fetch_assoc();
+        $row = $stmt->get_result()->fetch_assoc();
 
         if ($row) {
-            // Ya existe → sumar la cantidad nueva a la que ya tenía
-            $nuevoTotal = $row['cantidad'] + $cantidad;
-
-            // Si la suma de ambos supera el stock, lo topamos al máximo
-            if ($nuevoTotal > $stockDisponible) {
-                $nuevoTotal = $stockDisponible;
-            }
-
-            $update = "UPDATE carrito 
-                       SET cantidad = ? 
-                       WHERE carrito_id = ?";
-            $uStmt = $conn->prepare($update);
+            $nuevoTotal = min($row['cantidad'] + $cantidad, $stockDisponible);
+            $uStmt = $conn->prepare("UPDATE carrito SET cantidad = ? WHERE carrito_id = ?");
             $uStmt->bind_param("ii", $nuevoTotal, $row['carrito_id']);
             $uStmt->execute();
         } else {
-            // No existe → insertar nuevo
-
-            // Si intenta meter de golpe más de lo que hay, lo topamos
-            if ($cantidad > $stockDisponible) {
-                $cantidad = $stockDisponible;
-            }
-
-            $insert = "INSERT INTO carrito 
-                       (usuario_usuario_id, producto_producto_id, cantidad) 
-                       VALUES (?, ?, ?)";
-            $iStmt = $conn->prepare($insert);
-            $iStmt->bind_param("iii", $usuario_id, $producto_id, $cantidad);
+            $cantidadFinal = min($cantidad, $stockDisponible);
+            $iStmt = $conn->prepare("INSERT INTO carrito (usuario_usuario_id, producto_producto_id, cantidad) VALUES (?, ?, ?)");
+            $iStmt->bind_param("iii", $usuario_id, $producto_id, $cantidadFinal);
             $iStmt->execute();
         }
     }
 
-    // Obtener items del carrito para mostrar en carrito.php
-    public function getCartItems($usuario_id)
+    public function getCartItems(int $usuario_id): array
     {
         $conn = $this->connection->connect();
-
-        $query = "SELECT c.carrito_id, c.cantidad,
-                         p.producto_id, p.nombre, p.precio, p.imagen, p.stock
+        $query = "SELECT c.carrito_id, c.cantidad, p.producto_id, p.nombre, p.precio, p.imagen, p.stock
                   FROM carrito c
-                  INNER JOIN producto p 
-                    ON c.producto_producto_id = p.producto_id
+                  INNER JOIN producto p ON c.producto_producto_id = p.producto_id
                   WHERE c.usuario_usuario_id = ?";
         $stmt = $conn->prepare($query);
         $stmt->bind_param("i", $usuario_id);
         $stmt->execute();
-
-        $result = $stmt->get_result();
-        return $result->fetch_all(MYSQLI_ASSOC);
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
-    // Obtener número total de productos en carrito (para iconito)
-    public function getCartCount($usuario_id)
+    public function getCartCount(int $usuario_id): int
     {
         $conn = $this->connection->connect();
-
-        $query = "SELECT COALESCE(SUM(cantidad),0) AS total
-                  FROM carrito
-                  WHERE usuario_usuario_id = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $conn->prepare("SELECT COALESCE(SUM(cantidad), 0) AS total FROM carrito WHERE usuario_usuario_id = ?");
         $stmt->bind_param("i", $usuario_id);
         $stmt->execute();
         $result = $stmt->get_result()->fetch_assoc();
-
-        return (int) $result['total'];
+        return (int) ($result['total'] ?? 0);
     }
 
-    // Eliminar un ítem del carrito
-    public function removeItem($carrito_id, $usuario_id)
+    public function removeItem(int $carrito_id, int $usuario_id): void
     {
         $conn = $this->connection->connect();
-
-        $query = "DELETE FROM carrito 
-                  WHERE carrito_id = ? AND usuario_usuario_id = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $conn->prepare("DELETE FROM carrito WHERE carrito_id = ? AND usuario_usuario_id = ?");
         $stmt->bind_param("ii", $carrito_id, $usuario_id);
         $stmt->execute();
     }
 
-    // Vaciar carrito
-    public function clearCart($usuario_id)
+    public function clearCart(int $usuario_id): void
     {
         $conn = $this->connection->connect();
-
-        $query = "DELETE FROM carrito WHERE usuario_usuario_id = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $conn->prepare("DELETE FROM carrito WHERE usuario_usuario_id = ?");
         $stmt->bind_param("i", $usuario_id);
         $stmt->execute();
     }
 
-    //Modificar cantidades respetando el stock
-    public function updateQuantity($carrito_id, $usuario_id, $cantidad)
+    public function updateQuantity(int $carrito_id, int $usuario_id, int $cantidad): void
     {
         $conn = $this->connection->connect();
+        $cantidad = max(1, $cantidad);
 
-        // Aseguramos mínimo 1
-        if ($cantidad < 1) {
-            $cantidad = 1;
-        }
-
-        // Consultar el stock máximo disponible de este producto
-        $qStock = "SELECT p.stock 
-                   FROM carrito c 
-                   INNER JOIN producto p ON c.producto_producto_id = p.producto_id 
-                   WHERE c.carrito_id = ? AND c.usuario_usuario_id = ?";
+        $qStock = "SELECT p.stock FROM carrito c INNER JOIN producto p ON c.producto_producto_id = p.producto_id WHERE c.carrito_id = ? AND c.usuario_usuario_id = ?";
         $stmtStock = $conn->prepare($qStock);
         $stmtStock->bind_param("ii", $carrito_id, $usuario_id);
         $stmtStock->execute();
         $resStock = $stmtStock->get_result()->fetch_assoc();
 
-        // Si la cantidad solicitada supera el stock, la topamos al máximo disponible
         if ($resStock && $cantidad > $resStock['stock']) {
-            $cantidad = $resStock['stock'];
+            $cantidad = (int) $resStock['stock'];
         }
 
-        // Actualizamos
-        $query = "UPDATE carrito
-              SET cantidad = ?
-              WHERE carrito_id = ? AND usuario_usuario_id = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $conn->prepare("UPDATE carrito SET cantidad = ? WHERE carrito_id = ? AND usuario_usuario_id = ?");
         $stmt->bind_param("iii", $cantidad, $carrito_id, $usuario_id);
         $stmt->execute();
     }
 
-    // FINALIZAR COMPRA Y PROCESAR PAGO (Con reducción de stock manual)
-    public function checkout($usuario_id, $nombre, $direccion, $ciudad, $telefono, $correo, $titular, $tarjeta, $dir_facturacion, $ciudad_fact, $cp_fact, $pais_fact)
+    public function checkout($usuario_id, $nombre, $direccion, $ciudad, $telefono, $correo, $titular, $tarjeta, $dir_facturacion, $ciudad_fact, $cp_fact, $pais_fact): string
     {
         $conn = $this->connection->connect();
-
-        // 1) Traer items del carrito con stock y precio
-        $query = "SELECT 
-                c.carrito_id,
-                c.cantidad,
-                p.producto_id,
-                p.precio,
-                p.stock
-              FROM carrito c
-              INNER JOIN producto p 
-                    ON c.producto_producto_id = p.producto_id
-              WHERE c.usuario_usuario_id = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("i", $usuario_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $items = $result->fetch_all(MYSQLI_ASSOC);
-
-        if (count($items) === 0) {
-            return "empty";
-        }
-
-        // 2) Validar stock y calcular total
-        $total = 0;
-        foreach ($items as $item) {
-            if ($item['cantidad'] > $item['stock']) {
-                return "stock"; // stock insuficiente
-            }
-            $total += $item['cantidad'] * $item['precio'];
-        }
-
-        // 3) Iniciar transacción
         $conn->begin_transaction();
 
         try {
-            // 4) Insertar la compra (Datos de envío)
-            $qCompra = "INSERT INTO compra 
-                    (total, nombre_envio, direccion_envio, ciudad_envio, telefono_envio, usuario_usuario_id)
-                    VALUES (?, ?, ?, ?, ?, ?)";
+            // Bloqueo FOR UPDATE dentro de la transacción para evitar condiciones de carrera
+            $query = "SELECT c.carrito_id, c.cantidad, p.producto_id, p.precio, p.stock
+                      FROM carrito c
+                      INNER JOIN producto p ON c.producto_producto_id = p.producto_id
+                      WHERE c.usuario_usuario_id = ? FOR UPDATE";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("i", $usuario_id);
+            $stmt->execute();
+            $items = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+            if (count($items) === 0) {
+                $conn->rollback();
+                return "empty";
+            }
+
+            $total = 0;
+            foreach ($items as $item) {
+                if ($item['cantidad'] > $item['stock']) {
+                    $conn->rollback();
+                    return "stock";
+                }
+                $total += $item['cantidad'] * $item['precio'];
+            }
+
+            $qCompra = "INSERT INTO compra (total, nombre_envio, direccion_envio, ciudad_envio, telefono_envio, usuario_usuario_id) VALUES (?, ?, ?, ?, ?, ?)";
             $stmtCompra = $conn->prepare($qCompra);
-            $stmtCompra->bind_param(
-                "sssssi",
-                $total,
-                $nombre,
-                $direccion,
-                $ciudad,
-                $telefono,
-                $usuario_id
-            );
+            $stmtCompra->bind_param("dssssi", $total, $nombre, $direccion, $ciudad, $telefono, $usuario_id);
             $stmtCompra->execute();
             $compra_id = $conn->insert_id;
 
-            // 5) Insertar detalles Y REDUCIR STOCK
-            $qDetalle = "INSERT INTO detalle_compra
-                        (cantidad, precio_unitario, subtotal, compra_compra_id, producto_producto_id)
-                     VALUES (?, ?, ?, ?, ?)";
-            $stmtDetalle = $conn->prepare($qDetalle);
-
-            $qReduceStock = "UPDATE producto SET stock = stock - ? WHERE producto_id = ?";
-            $stmtReduceStock = $conn->prepare($qReduceStock);
+            $stmtDetalle = $conn->prepare("INSERT INTO detalle_compra (cantidad, precio_unitario, subtotal, compra_compra_id, producto_producto_id) VALUES (?, ?, ?, ?, ?)");
+            $stmtReduceStock = $conn->prepare("UPDATE producto SET stock = stock - ? WHERE producto_id = ?");
 
             foreach ($items as $item) {
                 $cantidad = (int) $item['cantidad'];
@@ -231,65 +147,100 @@ class CartController
                 $subtotal = $cantidad * $precio;
                 $producto_id = (int) $item['producto_id'];
 
-                // a) Guardar el detalle de la compra
-                $stmtDetalle->bind_param("issii", $cantidad, $precio, $subtotal, $compra_id, $producto_id);
+                $stmtDetalle->bind_param("iddii", $cantidad, $precio, $subtotal, $compra_id, $producto_id);
                 $stmtDetalle->execute();
 
-                // b) Reducir el stock del producto
                 $stmtReduceStock->bind_param("ii", $cantidad, $producto_id);
                 $stmtReduceStock->execute();
             }
 
-            // 6) Registrar el Pago en la nueva tabla
             $tarjetaLimpia = str_replace(' ', '', $tarjeta);
             $ultimos_digitos = substr($tarjetaLimpia, -4);
 
-            $qPago = "INSERT INTO pago 
-                     (compra_compra_id, correo, titular_tarjeta, ultimos_digitos, dir_facturacion, ciudad_fact, cp_fact, pais_fact) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-
+            $qPago = "INSERT INTO pago (compra_compra_id, correo, titular_tarjeta, ultimos_digitos, dir_facturacion, ciudad_fact, cp_fact, pais_fact) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
             $stmtPago = $conn->prepare($qPago);
-            $stmtPago->bind_param(
-                "isssssss",
-                $compra_id,
-                $correo,
-                $titular,
-                $ultimos_digitos,
-                $dir_facturacion,
-                $ciudad_fact,
-                $cp_fact,
-                $pais_fact
-            );
+            $stmtPago->bind_param("isssssss", $compra_id, $correo, $titular, $ultimos_digitos, $dir_facturacion, $ciudad_fact, $cp_fact, $pais_fact);
             $stmtPago->execute();
 
-            // 7) Vaciar carrito
             $this->clearCart($usuario_id);
-
-            // 8) Confirmamos la transacción completa
             $conn->commit();
-
             return "success";
-
         } catch (Exception $e) {
             $conn->rollback();
+            error_log("Error en checkout: " . $e->getMessage());
             return "error";
         }
     }
 
+    /**
+     * Cancelación de pedido blindada contra IDOR y protegida con transacción ACID
+     */
+    public function cancelOrder(int $compra_id, int $usuario_id): bool
+    {
+        if ($compra_id <= 0) {
+            return false;
+        }
+
+        $conn = $this->connection->connect();
+        $conn->begin_transaction();
+
+        try {
+            // 1. Verificar PRIMERO que la compra pertenezca al usuario autenticado (Mitigación IDOR)
+            $stmtCheck = $conn->prepare("SELECT compra_id FROM compra WHERE compra_id = ? AND usuario_usuario_id = ? FOR UPDATE");
+            $stmtCheck->bind_param("ii", $compra_id, $usuario_id);
+            $stmtCheck->execute();
+            if (!$stmtCheck->get_result()->fetch_assoc()) {
+                $conn->rollback();
+                return false;
+            }
+
+            // 2. Obtener detalles y restaurar stock
+            $stmtDetalles = $conn->prepare("SELECT producto_producto_id, cantidad FROM detalle_compra WHERE compra_compra_id = ?");
+            $stmtDetalles->bind_param("i", $compra_id);
+            $stmtDetalles->execute();
+            $resultado = $stmtDetalles->get_result();
+
+            $stmtRestaurar = $conn->prepare("UPDATE producto SET stock = stock + ? WHERE producto_id = ?");
+            while ($fila = $resultado->fetch_assoc()) {
+                $stmtRestaurar->bind_param("ii", $fila['cantidad'], $fila['producto_producto_id']);
+                $stmtRestaurar->execute();
+            }
+
+            // 3. Eliminar registros dependientes en orden referencial
+            $stmtBorrarPago = $conn->prepare("DELETE FROM pago WHERE compra_compra_id = ?");
+            $stmtBorrarPago->bind_param("i", $compra_id);
+            $stmtBorrarPago->execute();
+
+            $stmtBorrarDetalles = $conn->prepare("DELETE FROM detalle_compra WHERE compra_compra_id = ?");
+            $stmtBorrarDetalles->bind_param("i", $compra_id);
+            $stmtBorrarDetalles->execute();
+
+            $stmtBorrarCompra = $conn->prepare("DELETE FROM compra WHERE compra_id = ? AND usuario_usuario_id = ?");
+            $stmtBorrarCompra->bind_param("ii", $compra_id, $usuario_id);
+            $stmtBorrarCompra->execute();
+
+            $conn->commit();
+            return true;
+        } catch (Exception $e) {
+            $conn->rollback();
+            error_log("Error al cancelar orden: " . $e->getMessage());
+            return false;
+        }
+    }
 }
-
-
 
 /* ===========================
  * ROUTER: acciones por POST
  * =========================== */
-
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-
     if (!isset($_SESSION['usuario_id'])) {
-        // Si no está logueado lo mandamos a login
         header("Location: ../../login.php?error=login_required");
-        exit;
+        exit();
+    }
+
+    if (!verifyCsrfToken($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        die("Error de seguridad: Token CSRF inválido.");
     }
 
     $cart = new CartController();
@@ -297,81 +248,47 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'add_to_cart') {
-
-        $producto_id = isset($_POST['producto_id']) ? (int) $_POST['producto_id'] : 0;
-        $cantidad = isset($_POST['cantidad']) ? (int) $_POST['cantidad'] : 1;
-        if ($cantidad < 1)
-            $cantidad = 1;
-
+        $producto_id = (int) ($_POST['producto_id'] ?? 0);
+        $cantidad = max(1, (int) ($_POST['cantidad'] ?? 1));
         $cart->addToCart($usuario_id, $producto_id, $cantidad);
 
-        // Redirigir de vuelta a la página desde donde se mandó el form
-        $redirect = isset($_SERVER['HTTP_REFERER'])
-            ? $_SERVER['HTTP_REFERER']
+        // Validar HTTP_REFERER local (evita Open Redirect)
+        $referer = $_SERVER['HTTP_REFERER'] ?? '';
+        $parsedHost = parse_url($referer, PHP_URL_HOST);
+        $redirect = ($referer && ($parsedHost === null || $parsedHost === $_SERVER['HTTP_HOST']))
+            ? $referer
             : "../../productos.php";
 
         header("Location: " . $redirect);
-        exit;
-        
+        exit();
     } elseif ($action === 'remove_item') {
-
-        $carrito_id = isset($_POST['carrito_id']) ? (int) $_POST['carrito_id'] : 0;
-        $cart->removeItem($carrito_id, $usuario_id);
-
+        $cart->removeItem((int) ($_POST['carrito_id'] ?? 0), $usuario_id);
         header("Location: ../../carrito.php?msg=removed");
-        exit;
-
+        exit();
     } elseif ($action === 'clear_cart') {
-
         $cart->clearCart($usuario_id);
-
         header("Location: ../../carrito.php?msg=cleared");
-        exit;
-        
+        exit();
     } elseif ($action === 'update_qty') {
-
-        $carrito_id = isset($_POST['carrito_id']) ? (int) $_POST['carrito_id'] : 0;
-        $cantidad = isset($_POST['cantidad']) ? (int) $_POST['cantidad'] : 1;
-
-        $cart->updateQuantity($carrito_id, $usuario_id, $cantidad);
-
+        $cart->updateQuantity((int) ($_POST['carrito_id'] ?? 0), $usuario_id, (int) ($_POST['cantidad'] ?? 1));
         header("Location: ../../carrito.php?msg=updated");
-        exit;
-        
+        exit();
     } elseif ($action === 'checkout') {
-
-        // 1. Datos de envío (vienen ocultos desde la vista de pago)
-        $nombre = $_POST['nombre'] ?? '';
-        $direccion = $_POST['direccion'] ?? '';
-        $ciudad = $_POST['ciudad'] ?? '';
-        $telefono = $_POST['telefono'] ?? '';
-
-        // 2. Datos de pago (vienen del formulario visible de pago)
-        $correo = $_POST['correo'] ?? '';
-        $titular = $_POST['titular'] ?? '';
-        $tarjeta = $_POST['tarjeta'] ?? '';
-        $dir_facturacion = $_POST['dir_facturacion'] ?? '';
-        $ciudad_fact = $_POST['ciudad_fact'] ?? '';
-        $cp_fact = $_POST['cp_fact'] ?? '';
-        $pais = $_POST['pais'] ?? '';
-
-        // Ejecutamos la función con todas las variables
         $result = $cart->checkout(
             $usuario_id,
-            $nombre,
-            $direccion,
-            $ciudad,
-            $telefono,
-            $correo,
-            $titular,
-            $tarjeta,
-            $dir_facturacion,
-            $ciudad_fact,
-            $cp_fact,
-            $pais
+            trim($_POST['nombre'] ?? ''),
+            trim($_POST['direccion'] ?? ''),
+            trim($_POST['ciudad'] ?? ''),
+            trim($_POST['telefono'] ?? ''),
+            trim($_POST['correo'] ?? ''),
+            trim($_POST['titular'] ?? ''),
+            trim($_POST['tarjeta'] ?? ''),
+            trim($_POST['dir_facturacion'] ?? ''),
+            trim($_POST['ciudad_fact'] ?? ''),
+            trim($_POST['cp_fact'] ?? ''),
+            trim($_POST['pais'] ?? '')
         );
 
-        // Redirigimos a la página de pago para mostrar el resultado (modal)
         if ($result === "success") {
             header("Location: ../../pago.php?msg=success");
         } elseif ($result === "stock") {
@@ -379,49 +296,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         } else {
             header("Location: ../../pago.php?msg=error");
         }
-        exit;
-
+        exit();
     } elseif ($action === 'cancel_order') {
-        
-        $compra_id = isset($_POST['compra_id']) ? (int) $_POST['compra_id'] : 0;
-        $conn = (new ConnectionController())->connect();
-
-        // 1. Obtener los detalles de la compra para recuperar las cantidades
-        $queryDetalles = "SELECT producto_producto_id, cantidad FROM detalle_compra WHERE compra_compra_id = ?";
-        $stmtDetalles = $conn->prepare($queryDetalles);
-        $stmtDetalles->bind_param("i", $compra_id);
-        $stmtDetalles->execute();
-        $resultado = $stmtDetalles->get_result();
-        
-        // 2. Restaurar el stock de cada producto devolviéndolo al inventario
-        $queryRestaurar = "UPDATE producto SET stock = stock + ? WHERE producto_id = ?";
-        $stmtRestaurar = $conn->prepare($queryRestaurar);
-        
-        while ($fila = $resultado->fetch_assoc()) {
-            $stmtRestaurar->bind_param("ii", $fila['cantidad'], $fila['producto_producto_id']);
-            $stmtRestaurar->execute();
-        }
-
-        // 3. Eliminar el registro del pago (Llave foránea hacia compra)
-        $qBorrarPago = "DELETE FROM pago WHERE compra_compra_id = ?";
-        $stmtBorrarPago = $conn->prepare($qBorrarPago);
-        $stmtBorrarPago->bind_param("i", $compra_id);
-        $stmtBorrarPago->execute();
-
-        // 4. Eliminar los detalles de la compra (Llave foránea hacia compra)
-        $qBorrarDetalles = "DELETE FROM detalle_compra WHERE compra_compra_id = ?";
-        $stmtBorrarDetalles = $conn->prepare($qBorrarDetalles);
-        $stmtBorrarDetalles->bind_param("i", $compra_id);
-        $stmtBorrarDetalles->execute();
-
-        // 5. Eliminar la compra general de este usuario
-        $qBorrarCompra = "DELETE FROM compra WHERE compra_id = ? AND usuario_usuario_id = ?";
-        $stmtBorrarCompra = $conn->prepare($qBorrarCompra);
-        $stmtBorrarCompra->bind_param("ii", $compra_id, $usuario_id);
-        $stmtBorrarCompra->execute();
-
-        // Redirigir de vuelta a mis compras con un mensaje de éxito
-        header("Location: ../../mis-compras.php?msg=canceled");
-        exit;
+        $ok = $cart->cancelOrder((int) ($_POST['compra_id'] ?? 0), $usuario_id);
+        header("Location: ../../mis-compras.php?msg=" . ($ok ? "canceled" : "error"));
+        exit();
     }
 }

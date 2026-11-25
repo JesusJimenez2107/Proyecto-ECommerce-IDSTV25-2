@@ -1,75 +1,71 @@
 <?php
+require_once __DIR__ . "/../config/security.php";
+require_once __DIR__ . "/../config/connectionController.php";
 
-session_start();   
-include "../config/connectionController.php"; 
-
-if (isset($_POST['action']) && $_POST['action'] == "login") {
-
-    $email = strip_tags($_POST['email']);
-    $email = htmlspecialchars($email);
-    $email = htmlentities($email);
-
-    $password = strip_tags($_POST['password']);
-    $password = htmlspecialchars($password);
-    $password = htmlentities($password);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === "login") {
+    $email = filter_var(trim($_POST['email'] ?? ''), FILTER_SANITIZE_EMAIL);
+    $password = $_POST['password'] ?? '';
 
     $auth = new AuthController();
-    $auth->login($email,$password);
-} 
+    $auth->login($email, $password);
+}
 
-class AuthController{ 
+class AuthController
+{
+    private ConnectionController $connection;
 
-    private $connection;
-
-    public function __construct() {
+    public function __construct()
+    {
         $this->connection = new ConnectionController();
     }
 
-    function login($email, $password)
+    public function login(string $email, string $password): void
     {
-        $conn = $this->connection->connect();
-        if (!$conn->connect_error) {
-            
-            $query = "SELECT usuario_id, nombre, password, rol FROM usuario WHERE email = ?";
+        if (empty($email) || empty($password)) {
+            header('Location: ../../login.php?error=credentials');
+            exit();
+        }
+
+        try {
+            $conn = $this->connection->connect();
+            $query = "SELECT usuario_id, nombre, password, rol FROM usuario WHERE email = ? LIMIT 1";
 
             $prepared_query = $conn->prepare($query);
             $prepared_query->bind_param('s', $email);
             $prepared_query->execute();
 
             $results = $prepared_query->get_result();
-            $users = $results->fetch_all(MYSQLI_ASSOC); 
+            $user = $results->fetch_assoc();
 
-            if (count($users) > 0) {
+            if ($user && password_verify($password, $user['password'])) {
+                // Prevenir Fijación de Sesión
+                session_regenerate_id(true);
 
-                $hashed_password = $users[0]['password'];
-                
-                if (password_verify($password, $hashed_password)) {
-                    
-                    $_SESSION['email'] = $email;
-                    $_SESSION['rol'] = $users[0]['rol'];
-                    $_SESSION['usuario_id'] = $users[0]['usuario_id'];
-                    $_SESSION['nombre'] = $users[0]['nombre'];
-                    
-                    if ($users[0]['rol'] == "admin") {
-                        header("Location: ../../panel-admin.php");
-                    } else {
-                        header("Location: ../../index.php");
-                    }
-                    exit;
-                    
+                $_SESSION['email'] = $email;
+                $_SESSION['rol'] = $user['rol'];
+                $_SESSION['usuario_id'] = (int) $user['usuario_id'];
+                $_SESSION['nombre'] = $user['nombre'];
+
+                // Regenerar token CSRF tras autenticarse
+                unset($_SESSION['csrf_token']);
+                getCsrfToken();
+
+                if ($user['rol'] === "admin") {
+                    header("Location: ../../panel-admin.php");
                 } else {
-                    header('Location: ../../login.php?error=password');
-                    exit;
+                    header("Location: ../../index.php");
                 }
-            } else {
-                header('Location: ../../login.php?error=user');
-                exit;
+                exit();
             }
-            
-        } else {
-            header('Location: ../../login.php?error=db'); 
-            exit;
+
+            // Mensaje genérico para evitar enumeración de usuarios
+            header('Location: ../../login.php?error=credentials');
+            exit();
+
+        } catch (Exception $e) {
+            error_log("Error en login: " . $e->getMessage());
+            header('Location: ../../login.php?error=db');
+            exit();
         }
-    } 
+    }
 }
-?>

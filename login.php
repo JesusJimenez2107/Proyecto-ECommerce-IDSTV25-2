@@ -1,5 +1,4 @@
 <?php
-// Iniciar sesión para leer mensajes (logout / cuenta eliminada)
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -54,22 +53,22 @@ if (!empty($_SESSION['account_deleted'])) {
 
             <!-- ALERTAS POR ERRORES / REGISTRO -->
             <?php if (isset($_GET['error'])): ?>
-                <?php if ($_GET['error'] == 'user'): ?>
+                <?php if (in_array($_GET['error'], ['credentials', 'user', 'password'], true)): ?>
                     <div class="alert alert-error">
-                        El correo ingresado no está registrado.
+                        Correo o contraseña incorrectos. Verifica tus datos.
                     </div>
-                <?php elseif ($_GET['error'] == 'password'): ?>
+                <?php elseif ($_GET['error'] === 'login_required'): ?>
                     <div class="alert alert-error">
-                        La contraseña es incorrecta.
+                        Debes iniciar sesión para continuar.
                     </div>
-                <?php elseif ($_GET['error'] == 'db'): ?>
+                <?php elseif ($_GET['error'] === 'db'): ?>
                     <div class="alert alert-error">
                         Ocurrió un problema con la base de datos. Inténtalo más tarde.
                     </div>
                 <?php endif; ?>
             <?php endif; ?>
 
-            <?php if (isset($_GET['success']) && $_GET['success'] == 'registered'): ?>
+            <?php if (isset($_GET['success']) && $_GET['success'] === 'registered'): ?>
                 <div class="alert alert-success">
                     ¡Registro exitoso! Ahora puedes iniciar sesión.
                 </div>
