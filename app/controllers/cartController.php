@@ -172,9 +172,7 @@ class CartController
         }
     }
 
-    /**
-     * Cancelación de pedido blindada contra IDOR y protegida con transacción ACID
-     */
+    //Cancelación de pedido blindada contra IDOR y protegida con transacción ACID
     public function cancelOrder(int $compra_id, int $usuario_id): bool
     {
         if ($compra_id <= 0) {

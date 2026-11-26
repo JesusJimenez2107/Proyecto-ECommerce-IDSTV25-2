@@ -3,9 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-/**
- * Genera o devuelve el token CSRF activo de la sesión
- */
+// Genera o devuelve el token CSRF activo de la sesión
 function getCsrfToken(): string
 {
     if (empty($_SESSION['csrf_token'])) {
@@ -14,18 +12,14 @@ function getCsrfToken(): string
     return $_SESSION['csrf_token'];
 }
 
-/**
- * Imprime el campo input hidden con el token CSRF para formularios POST
- */
+// Imprime el campo input hidden con el token CSRF para formularios POST
 function csrfField(): string
 {
     $token = htmlspecialchars(getCsrfToken(), ENT_QUOTES, 'UTF-8');
     return '<input type="hidden" name="csrf_token" value="' . $token . '">';
 }
 
-/**
- * Valida que el token enviado por POST coincida con el de la sesión
- */
+// Valida que el token enviado por POST coincida con el de la sesión
 function verifyCsrfToken(?string $token): bool
 {
     if (empty($_SESSION['csrf_token']) || empty($token)) {
@@ -34,9 +28,7 @@ function verifyCsrfToken(?string $token): bool
     return hash_equals($_SESSION['csrf_token'], $token);
 }
 
-/**
- * Exige que el usuario haya iniciado sesión; si no, redirige a login.php
- */
+// Exige que el usuario haya iniciado sesión; si no, redirige a login.php
 function requireLogin(): void
 {
     if (!isset($_SESSION['usuario_id']) || empty($_SESSION['usuario_id'])) {
@@ -45,9 +37,7 @@ function requireLogin(): void
     }
 }
 
-/**
- * Exige rol estricto de administrador basado únicamente en la sesión del servidor
- */
+// Exige rol estricto de administrador basado únicamente en la sesión del servidor
 function requireAdmin(): void
 {
     if (!isset($_SESSION['usuario_id']) || !isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
